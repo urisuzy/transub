@@ -57,10 +57,12 @@ def handler(event, context):
         return {
             "statusCode": 200,
             "headers": {
-                "Content-Disposition": "attachment; filename=translated_subtitle.srt",
+                # "Content-Disposition": "attachment; filename=translated_subtitle.srt",
                 "Content-Type": "text/plain"
             },
-            "body": base64.b64encode(translated_srt_content.encode("utf-8")).decode("utf-8")
+            "body": {
+                "file_content": base64.b64encode(translated_srt_content.encode("utf-8"))
+            }
         }
 
     except Exception as e:
