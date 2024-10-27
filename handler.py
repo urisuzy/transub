@@ -1,17 +1,21 @@
-from transformers import MarianMTModel, MarianTokenizer
-import srt
-import os
-import json
+import runpod
+import torch
 import base64
+import srt
+from transformers import MarianMTModel, MarianTokenizer
 
-# Inisialisasi model dan tokenizer satu kali di luar handler untuk efisiensi
+# Inisialisasi model dan tokenizer di luar handler untuk efisiensi
 model_name = "Helsinki-NLP/opus-mt-en-id"
 tokenizer = MarianTokenizer.from_pretrained(model_name)
 model = MarianMTModel.from_pretrained(model_name)
 
+# Pindahkan model ke GPU jika tersedia
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
+
 def translate_batch(texts):
     """Menerjemahkan batch teks dengan mempertimbangkan konteks."""
-    inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
+    inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True).to(device)
     translated = model.generate(**inputs)
     return [tokenizer.decode(t, skip_special_tokens=True) for t in translated]
 
@@ -31,42 +35,27 @@ def translate_srt(srt_content, batch_size=5):
 
     return srt.compose(translated_subtitles)
 
-def handler(event, context):
-    """Handler untuk RunPod serverless dengan file upload (multipart support)."""
-    try:
-        # Dapatkan isi file dari event payload
-        if "file_content" not in event:
-            return {"statusCode": 400, "body": json.dumps({"error": "File content is required."})}
+def handler(event):
+    # Ambil teks SRT yang dienkode base64 dari JSON payload
+    input_data = event.get("input", {})
+    srt_text_base64 = input_data.get("srt_text_base64", "")
 
-        # Decode base64 content (karena file upload biasanya dikodekan sebagai base64)
-        srt_content = base64.b64decode(event["file_content"]).decode("utf-8")
+    if not srt_text_base64:
+        return {"error": "Base64-encoded SRT text is required."}
 
-        # Terjemahkan SRT
-        translated_srt = translate_srt(srt_content)
+    # Decode teks base64 menjadi SRT biasa
+    srt_content = base64.b64decode(srt_text_base64).decode("utf-8")
 
-        # Tulis hasil terjemahan ke file sementara
-        output_path = "/tmp/translated_subtitle.srt"
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.write(translated_srt)
+    # Terjemahkan SRT
+    translated_srt = translate_srt(srt_content)
 
-        # Baca file hasil terjemahan untuk dikembalikan dalam respons
-        with open(output_path, "r", encoding="utf-8") as f:
-            translated_srt_content = f.read()
+    # Encode hasil terjemahan SRT ke base64 untuk output
+    translated_srt_base64 = base64.b64encode(translated_srt.encode("utf-8")).decode("utf-8")
 
-        # Return the translated file content for download
-        return {
-            "statusCode": 200,
-            "headers": {
-                # "Content-Disposition": "attachment; filename=translated_subtitle.srt",
-                "Content-Type": "text/plain"
-            },
-            "body": {
-                "file_content": base64.b64encode(translated_srt_content.encode("utf-8"))
-            }
-        }
+    # Return hasil terjemahan sebagai base64
+    return {
+        "translated_srt_base64": translated_srt_base64
+    }
 
-    except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": json.dumps({"error": str(e)})
-        }
+# Start Runpod serverless handler
+runpod.serverless.start({"handler": handler})
