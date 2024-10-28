@@ -9,6 +9,9 @@ model_name = "Helsinki-NLP/opus-mt-en-id"
 tokenizer = MarianTokenizer.from_pretrained(model_name)
 model = MarianMTModel.from_pretrained(model_name)
 
+print("processing resource:")
+print("cuda" if torch.cuda.is_available() else "cpu")
+
 # Pindahkan model ke GPU jika tersedia
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
