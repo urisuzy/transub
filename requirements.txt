@@ -3,3 +3,4 @@ torch
 srt
 sentencepiece
 runpod
+sacremoses
