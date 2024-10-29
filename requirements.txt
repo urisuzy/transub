@@ -4,3 +4,4 @@ srt
 sentencepiece
 runpod
 sacremoses
+py-cpuinfo
