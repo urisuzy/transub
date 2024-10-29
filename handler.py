@@ -4,19 +4,23 @@ import base64
 import srt
 from transformers import MarianMTModel, MarianTokenizer
 import platform
+import os
 
 # Inisialisasi model dan tokenizer di luar handler untuk efisiensi
 model_name = "Helsinki-NLP/opus-mt-en-id"
 tokenizer = MarianTokenizer.from_pretrained(model_name)
 model = MarianMTModel.from_pretrained(model_name)
 
+has_gpu = torch.cuda.is_available()
+resource_type = has_gpu and "cuda" or "cpu"
+
 print(f"CPU: {platform.processor()}")
-print(f"GPU: {torch.cuda.get_device_name()}")
-print("processing resource:")
-print("cuda" if torch.cuda.is_available() else "cpu")
+print(f"CPU CORE: {os.cpu_count()}")
+print(f"GPU: {(has_gpu and torch.cuda.get_device_name()) or 'No GPU'}")
+print(f"processing resource: {resource_type}")
 
 # Pindahkan model ke GPU jika tersedia
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device(resource_type)
 model.to(device)
 
 # Optimalkan model untuk inferensi menggunakan TorchScript
@@ -29,7 +33,7 @@ def translate_batch(texts):
         translated = model.generate(**inputs)
     return [tokenizer.decode(t, skip_special_tokens=True) for t in translated]
 
-def translate_srt(srt_content, batch_size=50):  # batch size tinggi untuk memori 80GB
+def translate_srt(srt_content, batch_size=500):  # batch size tinggi untuk memori 80GB
     """Menerjemahkan konten SRT dari Inggris ke Indonesia dengan konteks."""
     subtitles = list(srt.parse(srt_content))
 
