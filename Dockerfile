@@ -1,5 +1,5 @@
 # Gunakan image dasar Python
-FROM python:3.9-slim
+FROM urisuzy/transub-base:latest
 
 # Set work directory di dalam container
 WORKDIR /app
@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . .
 
 # Instal dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# RUN pip install --no-cache-dir -r requirements.txt # in base
 
 # Ekspos port jika aplikasi memerlukan akses tertentu (misalnya Flask di port 5000)
 EXPOSE 5000
