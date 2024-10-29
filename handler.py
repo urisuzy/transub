@@ -3,12 +3,15 @@ import torch
 import base64
 import srt
 from transformers import MarianMTModel, MarianTokenizer
+import platform
 
 # Inisialisasi model dan tokenizer di luar handler untuk efisiensi
 model_name = "Helsinki-NLP/opus-mt-en-id"
 tokenizer = MarianTokenizer.from_pretrained(model_name)
 model = MarianMTModel.from_pretrained(model_name)
 
+print(f"CPU: {platform.processor()}")
+print(f"GPU: {torch.cuda.get_device_name()}")
 print("processing resource:")
 print("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -22,7 +25,7 @@ model.to(device)
 def translate_batch(texts):
     """Menerjemahkan batch teks dengan mempertimbangkan konteks."""
     inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True).to(device)
-    with torch.cuda.amp.autocast():  # Mixed Precision untuk optimasi inferensi
+    with torch.amp.autocast("cuda"):  # Mixed Precision untuk optimasi inferensi
         translated = model.generate(**inputs)
     return [tokenizer.decode(t, skip_special_tokens=True) for t in translated]
 
