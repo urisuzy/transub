@@ -5,6 +5,7 @@ import srt
 from transformers import MarianMTModel, MarianTokenizer
 import platform
 import os
+import cpuinfo
 
 # Inisialisasi model dan tokenizer di luar handler untuk efisiensi
 model_name = "Helsinki-NLP/opus-mt-en-id"
@@ -14,7 +15,8 @@ model = MarianMTModel.from_pretrained(model_name)
 has_gpu = torch.cuda.is_available()
 resource_type = has_gpu and "cuda" or "cpu"
 
-print(f"CPU: {platform.processor()}")
+
+print(f"CPU: " + cpuinfo.get_cpu_info()['brand_raw'])
 print(f"CPU CORE: {os.cpu_count()}")
 print(f"GPU: {(has_gpu and torch.cuda.get_device_name()) or 'No GPU'}")
 print(f"processing resource: {resource_type}")
