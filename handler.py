@@ -17,7 +17,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
 # Optimalkan model untuk inferensi menggunakan TorchScript
-model = torch.jit.script(model)
+# model = torch.jit.script(model)
 
 def translate_batch(texts):
     """Menerjemahkan batch teks dengan mempertimbangkan konteks."""
