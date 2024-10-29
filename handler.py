@@ -16,13 +16,17 @@ print("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
+# Optimalkan model untuk inferensi menggunakan TorchScript
+model = torch.jit.script(model)
+
 def translate_batch(texts):
     """Menerjemahkan batch teks dengan mempertimbangkan konteks."""
     inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True).to(device)
-    translated = model.generate(**inputs)
+    with torch.cuda.amp.autocast():  # Mixed Precision untuk optimasi inferensi
+        translated = model.generate(**inputs)
     return [tokenizer.decode(t, skip_special_tokens=True) for t in translated]
 
-def translate_srt(srt_content, batch_size=5):
+def translate_srt(srt_content, batch_size=50):  # batch size tinggi untuk memori 80GB
     """Menerjemahkan konten SRT dari Inggris ke Indonesia dengan konteks."""
     subtitles = list(srt.parse(srt_content))
 
