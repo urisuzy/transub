@@ -6,6 +6,7 @@ from transformers import MarianMTModel, MarianTokenizer
 import platform
 import os
 import cpuinfo
+import datetime
 
 # Inisialisasi model dan tokenizer di luar handler untuk efisiensi
 model_name = "Helsinki-NLP/opus-mt-en-id"
@@ -35,15 +36,21 @@ def translate_batch(texts):
         translated = model.generate(**inputs)
     return [tokenizer.decode(t, skip_special_tokens=True) for t in translated]
 
-def translate_srt(srt_content, batch_size=1000):  # batch size tinggi untuk memori 80GB
+def translate_srt(srt_content, batch_size=800):  # batch size tinggi untuk memori 80GB
     """Menerjemahkan konten SRT dari Inggris ke Indonesia dengan konteks."""
     subtitles = list(srt.parse(srt_content))
 
     translated_subtitles = []
     for i in range(0, len(subtitles), batch_size):
+        starttime = datetime.datetime.now()
         batch = subtitles[i:i + batch_size]
         batch_texts = [sub.content for sub in batch]
         translated_texts = translate_batch(batch_texts)
+        print(f"Translating subtitles {i + 1} to {min(i + batch_size, len(subtitles))}...")
+        print(f"Total subtitles: {len(subtitles)}")
+        print(f"loop {i} batch size {batch_size}")
+        print(f"Duration: {datetime.datetime.now() - starttime}")
+        print("=====================================================")
 
         for sub, translated_text in zip(batch, translated_texts):
             sub.content = translated_text
