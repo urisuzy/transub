@@ -36,7 +36,7 @@ def translate_batch(texts):
         translated = model.generate(**inputs)
     return [tokenizer.decode(t, skip_special_tokens=True) for t in translated]
 
-def translate_srt(srt_content, batch_size=500):  # batch size tinggi untuk memori 80GB
+def translate_srt(srt_content, batch_size=200):  # batch size tinggi untuk memori 80GB
     """Menerjemahkan konten SRT dari Inggris ke Indonesia dengan konteks."""
     subtitles = list(srt.parse(srt_content))
     print(f"Total subtitles: {len(subtitles)}")
