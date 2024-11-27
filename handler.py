@@ -7,6 +7,7 @@ import platform
 import os
 import cpuinfo
 import datetime
+import re
 
 # Inisialisasi model dan tokenizer di luar handler untuk efisiensi
 model_name = "Helsinki-NLP/opus-mt-en-id"
@@ -29,6 +30,13 @@ model.to(device)
 # Optimalkan model untuk inferensi menggunakan TorchScript
 # model = torch.jit.script(model)
 
+def remove_hearing_impaired(subtitles):
+    """Menghapus teks HEARING IMPAIRED dari subtitle."""
+    for sub in subtitles:
+        sub.content = re.sub(r'\([^)]*\)', '', sub.content)
+        sub.content = re.sub(r'\[[^]]*\]', '', sub.content)
+    return subtitles
+
 def translate_batch(texts):
     """Menerjemahkan batch teks dengan mempertimbangkan konteks."""
     inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True).to(device)
@@ -40,6 +48,9 @@ def translate_srt(srt_content, batch_size=200):  # batch size tinggi untuk memor
     """Menerjemahkan konten SRT dari Inggris ke Indonesia dengan konteks."""
     subtitles = list(srt.parse(srt_content))
     print(f"Total subtitles: {len(subtitles)}")
+
+    # Menghapus teks HEARING IMPAIRED
+    subtitles = remove_hearing_impaired(subtitles)
 
     translated_subtitles = []
     for i in range(0, len(subtitles), batch_size):
