@@ -16,18 +16,22 @@ MODEL_NAME = os.environ.get(
     "MODEL_NAME", "GoToCompany/gemma2-9b-cpt-sahabatai-v1-instruct"
 )
 
-# Kuantisasi FP8 on-the-fly: muat bobot Sahabat-AI asli (tetap mempertahankan
-# tuning bahasa Indonesia), runtime ~9GB VRAM, kualitas nyaris setara bf16.
-# Pas untuk GPU 24GB (RTX 4090 / L4). Pilihan lain via env QUANTIZATION:
-#   - "fp8"  (default) : ~9GB,  butuh GPU Ada/Hopper untuk FP8 native
-#                        (di Ampere dipakai jalur weight-only Marlin).
-#   - None / ""        : bf16 penuh ~18GB (hanya muat di GPU >= 32-40GB).
-#   - "awq"            : ~6GB, TAPI butuh checkpoint AWQ (Sahabat-AI belum punya
-#                        resmi -> harus kuantisasi sendiri dgn autoawq).
-DTYPE = os.environ.get("DTYPE", "auto")
-QUANTIZATION = os.environ.get("QUANTIZATION", "fp8") or None
-MAX_MODEL_LEN = int(os.environ.get("MAX_MODEL_LEN", "4096"))
-GPU_MEM_UTIL = float(os.environ.get("GPU_MEM_UTIL", "0.90"))
+# Kuantisasi. CATATAN: FP8 native HANYA di GPU Ada/Hopper (RTX 4090, L4, H100).
+# Di Ampere (RTX A5000/A10/3090) FP8 GAGAL saat init -> jangan dipakai.
+# Default = bf16 (tanpa kuantisasi): kualitas terbaik, 9B muat di 24GB asalkan
+# MAX_MODEL_LEN & GPU_MEM_UTIL disetel seperti di bawah (cocok untuk A5000).
+# Pilihan lain via env QUANTIZATION:
+#   - None / ""        : bf16 ~18GB bobot (default, jalan di A5000 24GB).
+#   - "bitsandbytes"   : 4-bit on-the-fly ~6GB, didukung Ampere, tanpa checkpoint
+#                        terpisah. Lebih ringan tapi sedikit turun kualitas &
+#                        lebih lambat di vLLM.
+#   - "fp8"            : ~9GB, HANYA GPU Ada/Hopper.
+DTYPE = os.environ.get("DTYPE", "bfloat16")
+QUANTIZATION = os.environ.get("QUANTIZATION", "") or None
+# Prompt kita pendek (system + 3 kalimat konteks + target << 1k token), jadi
+# 2048 sudah cukup dan menghemat KV cache supaya bf16 muat lega di 24GB.
+MAX_MODEL_LEN = int(os.environ.get("MAX_MODEL_LEN", "2048"))
+GPU_MEM_UTIL = float(os.environ.get("GPU_MEM_UTIL", "0.92"))
 
 # Jendela konteks: berapa kalimat sebelum/sesudah yang diberikan ke model
 # sebagai referensi makna (tidak diterjemahkan, hanya konteks).
@@ -36,13 +40,17 @@ CTX_AFTER = int(os.environ.get("CTX_AFTER", "1"))
 
 # Inisialisasi model sekali di luar handler (efisien untuk serverless warm).
 print(f"Loading model: {MODEL_NAME} (dtype={DTYPE}, quant={QUANTIZATION})")
-llm = LLM(
+llm_kwargs = dict(
     model=MODEL_NAME,
     dtype=DTYPE,
     quantization=QUANTIZATION,
     max_model_len=MAX_MODEL_LEN,
     gpu_memory_utilization=GPU_MEM_UTIL,
 )
+# bitsandbytes butuh load_format khusus agar bobot dikuantisasi saat dimuat.
+if QUANTIZATION == "bitsandbytes":
+    llm_kwargs["load_format"] = "bitsandbytes"
+llm = LLM(**llm_kwargs)
 
 sampling_params = SamplingParams(
     temperature=0.3,   # sedikit variasi -> natural, tetap setia ke sumber
