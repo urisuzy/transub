@@ -10,17 +10,20 @@ from openai import OpenAI
 # Konfigurasi endpoint cloud (OpenAI-compatible)
 # =============================================================================
 BASE_URL = os.environ.get("OPENAI_BASE_URL", "http://157.180.30.121:20128/v1")
-MODEL = os.environ.get("MODEL", "deepseek/deepseek-v4-flash")
+MODEL = os.environ.get("MODEL", "openrouter/deepseek/deepseek-v4-flash")
 # API key WAJIB diisi sendiri lewat env var OPENAI_API_KEY.
 API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 # Jumlah kalimat yang dikirim per request. Lebih besar = lebih hemat token &
 # konteks antar-kalimat lebih kaya, tapi risiko misalignment baris naik.
-CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", "20"))
+CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", "100"))
 # Berapa request berjalan paralel.
 CONCURRENCY = int(os.environ.get("CONCURRENCY", "8"))
 TEMPERATURE = float(os.environ.get("TEMPERATURE", "0.3"))
 MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "2"))
+# Batas token output per request. Untuk chunk besar (mis. 100 baris) harus
+# cukup besar agar balasan tidak terpotong (~ baris * 60 token + penomoran).
+MAX_TOKENS = int(os.environ.get("MAX_TOKENS", "8192"))
 
 client = OpenAI(base_url=BASE_URL, api_key=API_KEY or "EMPTY")
 
@@ -120,6 +123,7 @@ def _chat(user_content):
             resp = client.chat.completions.create(
                 model=MODEL,
                 temperature=TEMPERATURE,
+                max_tokens=MAX_TOKENS,
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": user_content},
@@ -145,9 +149,15 @@ def translate_chunk(chunk):
     """Terjemahkan sekumpulan kalimat berurutan dalam satu request (bernomor).
 
     Kalimat dalam satu chunk saling jadi konteks. Output diparse balik per
-    nomor; jika jumlah/penomoran tidak cocok, jatuh ke mode per-kalimat.
+    nomor. Jika jumlah/penomoran tidak cocok (mis. model menggabung baris atau
+    balasan terpotong), chunk DIBELAH DUA dan dicoba ulang secara rekursif --
+    bukan langsung jatuh ke per-kalimat -- supaya chunk besar tetap hemat
+    request. Per-kalimat hanya dipakai sebagai dasar (chunk berukuran 1).
     """
     n = len(chunk)
+    if n == 1:
+        return [translate_single(chunk[0])]
+
     numbered = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(chunk))
     user = (
         f"Terjemahkan {n} baris subtitle Inggris berikut ke bahasa Indonesia.\n"
@@ -169,8 +179,10 @@ def translate_chunk(chunk):
 
     results = [parsed.get(i + 1) for i in range(n)]
     if any(r is None or r == "" for r in results):
-        # Penomoran tidak utuh -> fallback aman per-kalimat.
-        return [translate_single(s) for s in chunk]
+        # Penomoran tidak utuh -> belah dua dan coba ulang tiap separuh.
+        mid = n // 2
+        print(f"  chunk align gagal (n={n}), pecah jadi {mid}+{n - mid}")
+        return translate_chunk(chunk[:mid]) + translate_chunk(chunk[mid:])
     return [postprocess(r) for r in results]
 
 
