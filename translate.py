@@ -16,10 +16,16 @@ MODEL_NAME = os.environ.get(
     "MODEL_NAME", "GoToCompany/gemma2-9b-cpt-sahabatai-v1-instruct"
 )
 
-# bf16 = kualitas terbaik (~18GB VRAM). Untuk GPU lebih kecil, set
-# QUANTIZATION=awq + pakai bobot AWQ (mis. ...-AWQ) -> ~6GB VRAM.
-DTYPE = os.environ.get("DTYPE", "bfloat16")
-QUANTIZATION = os.environ.get("QUANTIZATION") or None
+# Kuantisasi FP8 on-the-fly: muat bobot Sahabat-AI asli (tetap mempertahankan
+# tuning bahasa Indonesia), runtime ~9GB VRAM, kualitas nyaris setara bf16.
+# Pas untuk GPU 24GB (RTX 4090 / L4). Pilihan lain via env QUANTIZATION:
+#   - "fp8"  (default) : ~9GB,  butuh GPU Ada/Hopper untuk FP8 native
+#                        (di Ampere dipakai jalur weight-only Marlin).
+#   - None / ""        : bf16 penuh ~18GB (hanya muat di GPU >= 32-40GB).
+#   - "awq"            : ~6GB, TAPI butuh checkpoint AWQ (Sahabat-AI belum punya
+#                        resmi -> harus kuantisasi sendiri dgn autoawq).
+DTYPE = os.environ.get("DTYPE", "auto")
+QUANTIZATION = os.environ.get("QUANTIZATION", "fp8") or None
 MAX_MODEL_LEN = int(os.environ.get("MAX_MODEL_LEN", "4096"))
 GPU_MEM_UTIL = float(os.environ.get("GPU_MEM_UTIL", "0.90"))
 
