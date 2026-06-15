@@ -1,0 +1,16 @@
+services:
+  transub:
+    build: .
+    image: urisuzy/transub:latest
+    container_name: transub
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${PORT:-8000}:8000"
+    # Jalankan worker RunPod sebagai HTTP API server lokal.
+    # Endpoint: POST http://localhost:${PORT}/runsync  body: {"input": {...}}
+    command: >
+      python handler.py
+      --rp_serve_api
+      --rp_api_host 0.0.0.0
+      --rp_api_port 8000

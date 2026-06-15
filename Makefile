@@ -1,7 +1,7 @@
-.PHONY: build-base build push
+.PHONY: push build up down logs
 
 default:
-	@echo "Error: Please specify a target (e.g., 'make build-base' or 'make build')"
+	@echo "Targets: make up | down | logs | build | push MSG=\"pesan\""
 	@exit 1
 
 # Commit & push perubahan lokal. Pesan commit: make push MSG="pesan".
@@ -11,26 +11,16 @@ push:
 	git commit -m "$(MSG)"
 	git push
 
-build-base:
-	git pull
-	docker build -t urisuzy/transub-base:vllm -f Dockerfile-base .
-	docker push urisuzy/transub-base:vllm
-
+# Build image (single-stage, tanpa base image).
 build:
-	git pull
-	docker build -t urisuzy/transub:vllm .
-	docker push urisuzy/transub:vllm
+	docker compose build
 
-build-release:
-	git pull
-	@if [ -z "$(word 1,$(MAKECMDGOALS))" ]; then \
-		echo "Error: Version parameter is required. Usage: make build-release 1.0.0"; \
-		exit 1; \
-	else \
-		echo "Building with tag: $(word 2,$(MAKECMDGOALS))"; \
-		docker build -t urisuzy/transub:vllm-$(word 2,$(MAKECMDGOALS)) .; \
-		docker push urisuzy/transub:vllm-$(word 2,$(MAKECMDGOALS)); \
-	fi
+# Jalankan service via docker compose (baca config dari .env).
+up:
+	docker compose up -d --build
 
-%:
-	@:
+down:
+	docker compose down
+
+logs:
+	docker compose logs -f

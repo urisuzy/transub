@@ -1,17 +1,17 @@
-# Gunakan image dasar Python
-FROM urisuzy/transub-base:vllm
+# Single-stage build (tanpa base image terpisah).
+FROM python:3.10-slim
 
-# Set work directory di dalam container
 WORKDIR /app
 
-# Salin semua file ke dalam container
+# Install dependencies dulu agar layer-nya ter-cache.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Salin sisa kode.
 COPY . .
 
-# Instal dependencies
-# RUN pip install --no-cache-dir -r requirements.txt # in base
+# Port API server RunPod (saat dijalankan dengan --rp_serve_api).
+EXPOSE 8000
 
-# Ekspos port jika aplikasi memerlukan akses tertentu (misalnya Flask di port 5000)
-EXPOSE 5000
-
-# Tentukan perintah untuk menjalankan aplikasi di container
+# Default: handler RunPod. docker-compose meng-override ke mode API server.
 CMD ["python", "handler.py"]
