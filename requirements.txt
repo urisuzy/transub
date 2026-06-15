@@ -1,7 +1,3 @@
-transformers
-torch
+vllm
 srt
-sentencepiece
 runpod
-sacremoses
-py-cpuinfo

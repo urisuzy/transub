@@ -1,5 +1,7 @@
-# Gunakan image dasar Python
-FROM python:3.9-slim
+# Gunakan image dasar Python (vLLM butuh Python >= 3.10).
+# CUDA runtime disediakan oleh host RunPod (nvidia runtime); wheel vLLM
+# membawa pustaka nvidia-*-cu12 yang dibutuhkan.
+FROM python:3.10-slim
 
 # Set work directory di dalam container
 WORKDIR /app

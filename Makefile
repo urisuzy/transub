@@ -1,8 +1,15 @@
-.PHONY: build-base build
+.PHONY: build-base build push
 
 default:
 	@echo "Error: Please specify a target (e.g., 'make build-base' or 'make build')"
 	@exit 1
+
+# Commit & push perubahan lokal. Pesan commit: make push MSG="pesan".
+MSG ?= update
+push:
+	git add -A
+	git commit -m "$(MSG)"
+	git push
 
 build-base:
 	git pull
