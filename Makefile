@@ -28,8 +28,8 @@ build-release:
 		exit 1; \
 	else \
 		echo "Building with tag: $(word 2,$(MAKECMDGOALS))"; \
-		docker build -t urisuzy/transub:$(word 2,$(MAKECMDGOALS)) .; \
-		docker push urisuzy/transub:$(word 2,$(MAKECMDGOALS)); \
+		docker build -t urisuzy/transub:vllm-$(word 2,$(MAKECMDGOALS)) .; \
+		docker push urisuzy/transub:vllm-$(word 2,$(MAKECMDGOALS)); \
 	fi
 
 %:
