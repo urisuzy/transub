@@ -3,13 +3,21 @@ services:
     build: .
     image: urisuzy/transub:latest
     container_name: transub
-    restart: unless-stopped
+    restart: always
     env_file: .env
     ports:
       - "${PORT:-8000}:8000"
+    networks:
+      - transub-net
     # FastAPI. Endpoint: POST http://localhost:${PORT}/translate
     # body: {"srt_text_base64": "..."} -> {"translated_srt_base64": "..."}
     command: >
       uvicorn app:app
       --host 0.0.0.0
       --port 8000
+
+# Shared network agar transub-api bisa memanggil service ini via nama "transub".
+# Buat sekali di VPS:  docker network create transub-net
+networks:
+  transub-net:
+    external: true
