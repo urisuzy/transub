@@ -24,6 +24,12 @@ MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "2"))
 # Batas token output per request. Untuk chunk besar (mis. 100 baris) harus
 # cukup besar agar balasan tidak terpotong (~ baris * 60 token + penomoran).
 MAX_TOKENS = int(os.environ.get("MAX_TOKENS", "8192"))
+# Matikan thinking/reasoning (default ON di deepseek-v4-flash). Untuk tugas
+# terjemahan, reasoning hampir tak berguna tapi membengkakkan output token
+# (= biaya terbesar). Set DISABLE_THINKING=0 untuk mengaktifkan lagi.
+DISABLE_THINKING = os.environ.get("DISABLE_THINKING", "1").lower() not in (
+    "0", "false", "no", "",
+)
 
 client = OpenAI(base_url=BASE_URL, api_key=API_KEY or "EMPTY")
 
@@ -118,12 +124,15 @@ def postprocess(text):
 def _chat(user_content):
     """Satu panggilan chat completion dengan retry."""
     last_err = None
+    # OpenRouter: matikan reasoning lewat extra_body.
+    extra_body = {"reasoning": {"enabled": False}} if DISABLE_THINKING else None
     for _ in range(MAX_RETRIES + 1):
         try:
             resp = client.chat.completions.create(
                 model=MODEL,
                 temperature=TEMPERATURE,
                 max_tokens=MAX_TOKENS,
+                extra_body=extra_body,
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": user_content},
