@@ -1,3 +1,4 @@
 openai
 srt
-runpod
+fastapi
+uvicorn[standard]

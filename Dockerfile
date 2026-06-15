@@ -10,8 +10,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Salin sisa kode.
 COPY . .
 
-# Port API server RunPod (saat dijalankan dengan --rp_serve_api).
+# Port FastAPI.
 EXPOSE 8000
 
-# Default: handler RunPod. docker-compose meng-override ke mode API server.
-CMD ["python", "handler.py"]
+# Jalankan FastAPI via uvicorn.
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]

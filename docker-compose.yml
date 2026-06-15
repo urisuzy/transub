@@ -7,10 +7,9 @@ services:
     env_file: .env
     ports:
       - "${PORT:-8000}:8000"
-    # Jalankan worker RunPod sebagai HTTP API server lokal.
-    # Endpoint: POST http://localhost:${PORT}/runsync  body: {"input": {...}}
+    # FastAPI. Endpoint: POST http://localhost:${PORT}/translate
+    # body: {"srt_text_base64": "..."} -> {"translated_srt_base64": "..."}
     command: >
-      python handler.py
-      --rp_serve_api
-      --rp_api_host 0.0.0.0
-      --rp_api_port 8000
+      uvicorn app:app
+      --host 0.0.0.0
+      --port 8000
