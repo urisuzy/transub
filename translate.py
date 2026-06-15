@@ -1,71 +1,34 @@
 import base64
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 import srt
-from vllm import LLM, SamplingParams
+from openai import OpenAI
 
 # =============================================================================
-# Konfigurasi model
+# Konfigurasi endpoint cloud (OpenAI-compatible)
 # =============================================================================
-# Model LLM kecil yang disetel khusus bahasa Indonesia (kualitas naturalness
-# tertinggi untuk EN->ID). Bisa di-override lewat env var MODEL_NAME.
-#   - GoToCompany/gemma2-9b-cpt-sahabatai-v1-instruct  (paling Indonesia-sentris)
-#   - aisingapore/Gemma-SEA-LION-v3-9B-IT              (cakupan SEA lebih luas)
-MODEL_NAME = os.environ.get(
-    "MODEL_NAME", "GoToCompany/gemma2-9b-cpt-sahabatai-v1-instruct"
-)
+BASE_URL = os.environ.get("OPENAI_BASE_URL", "http://157.180.30.121:20128/v1")
+MODEL = os.environ.get("MODEL", "deepseek/deepseek-v4-flash")
+# API key WAJIB diisi sendiri lewat env var OPENAI_API_KEY.
+API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
-# Kuantisasi. CATATAN: FP8 native HANYA di GPU Ada/Hopper (RTX 4090, L4, H100).
-# Di Ampere (RTX A5000/A10/3090) FP8 GAGAL saat init -> jangan dipakai.
-# Default = bf16 (tanpa kuantisasi): kualitas terbaik, 9B muat di 24GB asalkan
-# MAX_MODEL_LEN & GPU_MEM_UTIL disetel seperti di bawah (cocok untuk A5000).
-# Pilihan lain via env QUANTIZATION:
-#   - None / ""        : bf16 ~18GB bobot (default, jalan di A5000 24GB).
-#   - "bitsandbytes"   : 4-bit on-the-fly ~6GB, didukung Ampere, tanpa checkpoint
-#                        terpisah. Lebih ringan tapi sedikit turun kualitas &
-#                        lebih lambat di vLLM.
-#   - "fp8"            : ~9GB, HANYA GPU Ada/Hopper.
-DTYPE = os.environ.get("DTYPE", "bfloat16")
-QUANTIZATION = os.environ.get("QUANTIZATION", "") or None
-# Prompt kita pendek (system + 3 kalimat konteks + target << 1k token), jadi
-# 2048 sudah cukup dan menghemat KV cache supaya bf16 muat lega di 24GB.
-MAX_MODEL_LEN = int(os.environ.get("MAX_MODEL_LEN", "2048"))
-GPU_MEM_UTIL = float(os.environ.get("GPU_MEM_UTIL", "0.92"))
+# Jumlah kalimat yang dikirim per request. Lebih besar = lebih hemat token &
+# konteks antar-kalimat lebih kaya, tapi risiko misalignment baris naik.
+CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", "20"))
+# Berapa request berjalan paralel.
+CONCURRENCY = int(os.environ.get("CONCURRENCY", "8"))
+TEMPERATURE = float(os.environ.get("TEMPERATURE", "0.3"))
+MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "2"))
 
-# Jendela konteks: berapa kalimat sebelum/sesudah yang diberikan ke model
-# sebagai referensi makna (tidak diterjemahkan, hanya konteks).
-CTX_BEFORE = int(os.environ.get("CTX_BEFORE", "2"))
-CTX_AFTER = int(os.environ.get("CTX_AFTER", "1"))
-
-# Inisialisasi model sekali di luar handler (efisien untuk serverless warm).
-print(f"Loading model: {MODEL_NAME} (dtype={DTYPE}, quant={QUANTIZATION})")
-llm_kwargs = dict(
-    model=MODEL_NAME,
-    dtype=DTYPE,
-    quantization=QUANTIZATION,
-    max_model_len=MAX_MODEL_LEN,
-    gpu_memory_utilization=GPU_MEM_UTIL,
-)
-# bitsandbytes butuh load_format khusus agar bobot dikuantisasi saat dimuat.
-if QUANTIZATION == "bitsandbytes":
-    llm_kwargs["load_format"] = "bitsandbytes"
-llm = LLM(**llm_kwargs)
-
-sampling_params = SamplingParams(
-    temperature=0.3,   # sedikit variasi -> natural, tetap setia ke sumber
-    top_p=0.9,
-    max_tokens=512,
-    repetition_penalty=1.05,
-)
+client = OpenAI(base_url=BASE_URL, api_key=API_KEY or "EMPTY")
 
 SYSTEM_PROMPT = (
     "Kamu penerjemah subtitle film profesional dari bahasa Inggris ke bahasa "
     "Indonesia. Terjemahkan dengan gaya percakapan yang natural dan luwes, "
     "bukan terjemahan kaku kata-per-kata. Sesuaikan nada bicara dengan "
-    "konteks adegan. Pertahankan nama orang, tempat, dan istilah teknis. "
-    "JANGAN menambahkan penjelasan, tanda kutip, atau label apa pun. "
-    "Keluarkan HANYA hasil terjemahan dari kalimat target dalam satu blok teks."
+    "konteks adegan. Pertahankan nama orang, tempat, dan istilah teknis."
 )
 
 # Penggantian kata pasca-proses (opsional).
@@ -75,6 +38,8 @@ replacements = [
 
 # Akhir kalimat: tanda baca + opsional kutip/kurung penutup di ujung teks.
 _SENTENCE_END = re.compile(r"""[.!?…]['"”’\)\]]*\s*$""")
+# Baris bernomor pada output model: "12. teks" / "12) teks" / "12: teks".
+_NUMBERED = re.compile(r"^\s*(\d+)\s*[.):\-]\s*(.*)$")
 
 
 def remove_empty_subtitles(subtitles):
@@ -100,8 +65,7 @@ def group_into_sentences(subtitles):
 
     Subtitle sering memecah satu kalimat ke beberapa cue. Kita gabungkan cue
     sampai bertemu tanda akhir kalimat, sehingga model menerjemahkan kalimat
-    lengkap (jauh lebih natural & benar secara tata bahasa), lalu hasilnya
-    dipecah lagi ke cue aslinya pada distribute_translation().
+    lengkap (jauh lebih natural), lalu hasilnya dipecah lagi ke cue aslinya.
 
     Mengembalikan list of list[Subtitle].
     """
@@ -112,17 +76,13 @@ def group_into_sentences(subtitles):
         if _SENTENCE_END.search(normalize_cue_text(sub.content)):
             groups.append(current)
             current = []
-    if current:  # sisa tanpa tanda akhir kalimat
+    if current:
         groups.append(current)
     return groups
 
 
 def distribute_translation(translated, group):
-    """Pecah kembali kalimat terjemahan ke cue-cue aslinya.
-
-    Pembagian proporsional terhadap jumlah kata sumber tiap cue, agar timing
-    dan ritme tampilan subtitle tetap mendekati aslinya.
-    """
+    """Pecah kembali kalimat terjemahan ke cue-cue aslinya secara proporsional."""
     if len(group) == 1:
         return [translated.strip()]
 
@@ -138,33 +98,11 @@ def distribute_translation(translated, group):
             chunk = tgt_words[idx:]
         else:
             take = round(n * w / total_src)
-            take = min(take, n - idx)  # jangan over-shoot
+            take = min(take, n - idx)
             chunk = tgt_words[idx:idx + take]
             idx += take
         chunks.append(" ".join(chunk).strip())
     return chunks
-
-
-def build_messages(sentences, i):
-    """Bangun chat messages untuk kalimat ke-i dengan jendela konteks."""
-    before = sentences[max(0, i - CTX_BEFORE):i]
-    after = sentences[i + 1:i + 1 + CTX_AFTER]
-
-    parts = []
-    if before:
-        parts.append("Konteks sebelumnya (jangan diterjemahkan):")
-        parts.extend(f"- {s}" for s in before)
-    if after:
-        parts.append("Konteks sesudahnya (jangan diterjemahkan):")
-        parts.extend(f"- {s}" for s in after)
-    parts.append("")
-    parts.append("Terjemahkan ke bahasa Indonesia, kalimat target ini saja:")
-    parts.append(sentences[i])
-
-    return [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": "\n".join(parts)},
-    ]
 
 
 def postprocess(text):
@@ -174,8 +112,70 @@ def postprocess(text):
     return text
 
 
+def _chat(user_content):
+    """Satu panggilan chat completion dengan retry."""
+    last_err = None
+    for _ in range(MAX_RETRIES + 1):
+        try:
+            resp = client.chat.completions.create(
+                model=MODEL,
+                temperature=TEMPERATURE,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_content},
+                ],
+            )
+            return resp.choices[0].message.content or ""
+        except Exception as exc:  # error jaringan / API
+            last_err = exc
+    raise last_err
+
+
+def translate_single(sentence):
+    """Fallback: terjemahkan satu kalimat saja (dipakai jika batch gagal align)."""
+    out = _chat(
+        "Terjemahkan kalimat subtitle Inggris berikut ke bahasa Indonesia. "
+        "Keluarkan HANYA terjemahannya, tanpa label atau penjelasan:\n\n"
+        + sentence
+    )
+    return postprocess(out)
+
+
+def translate_chunk(chunk):
+    """Terjemahkan sekumpulan kalimat berurutan dalam satu request (bernomor).
+
+    Kalimat dalam satu chunk saling jadi konteks. Output diparse balik per
+    nomor; jika jumlah/penomoran tidak cocok, jatuh ke mode per-kalimat.
+    """
+    n = len(chunk)
+    numbered = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(chunk))
+    user = (
+        f"Terjemahkan {n} baris subtitle Inggris berikut ke bahasa Indonesia.\n"
+        "Aturan ketat:\n"
+        f"- Keluarkan TEPAT {n} baris.\n"
+        "- Pertahankan nomor urut di depan tiap baris (format: \"N. teks\").\n"
+        "- Satu baris input = satu baris output. JANGAN menggabung atau "
+        "memecah baris.\n"
+        "- Natural dan luwes; jangan menambahkan penjelasan apa pun.\n\n"
+        + numbered
+    )
+    text = _chat(user)
+
+    parsed = {}
+    for line in text.splitlines():
+        m = _NUMBERED.match(line)
+        if m:
+            parsed[int(m.group(1))] = m.group(2).strip()
+
+    results = [parsed.get(i + 1) for i in range(n)]
+    if any(r is None or r == "" for r in results):
+        # Penomoran tidak utuh -> fallback aman per-kalimat.
+        return [translate_single(s) for s in chunk]
+    return [postprocess(r) for r in results]
+
+
 def translate_srt(srt_content):
-    """Menerjemahkan konten SRT EN->ID dengan rekonstruksi kalimat + konteks."""
+    """Menerjemahkan konten SRT EN->ID via API cloud (batch + rekonstruksi)."""
     subtitles = list(srt.parse(srt_content))
     print(f"Total subtitles before filter: {len(subtitles)}")
 
@@ -192,20 +192,24 @@ def translate_srt(srt_content):
     print(f"Reconstructed into {len(sentences)} sentences from "
           f"{len(subtitles)} cues.")
 
-    # 2) Terjemahkan semua kalimat sekaligus (batched) dengan jendela konteks
-    conversations = [build_messages(sentences, i) for i in range(len(sentences))]
-    outputs = llm.chat(conversations, sampling_params)
-    translated_sentences = [postprocess(o.outputs[0].text) for o in outputs]
+    # 2) Bagi jadi chunk, terjemahkan paralel
+    chunks = [sentences[i:i + CHUNK_SIZE]
+              for i in range(0, len(sentences), CHUNK_SIZE)]
+    print(f"Translating {len(chunks)} chunks (size {CHUNK_SIZE}, "
+          f"concurrency {CONCURRENCY})...")
+    with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:
+        chunk_results = list(pool.map(translate_chunk, chunks))
+    translated_sentences = [s for res in chunk_results for s in res]
 
     # 3) Pecah tiap kalimat terjemahan kembali ke cue aslinya
     out_subs = []
     for group, translated in zip(groups, translated_sentences):
-        chunks = distribute_translation(translated, group)
-        for sub, chunk in zip(group, chunks):
-            sub.content = chunk
+        pieces = distribute_translation(translated, group)
+        for sub, piece in zip(group, pieces):
+            sub.content = piece
             out_subs.append(sub)
 
-    # 4) Re-index agar penomoran rapi (tanpa lompatan setelah filter)
+    # 4) Re-index agar penomoran rapi
     for new_index, sub in enumerate(out_subs, start=1):
         sub.index = new_index
 
@@ -222,12 +226,12 @@ def handler(event):
 
     try:
         srt_content = base64.b64decode(srt_text_base64).decode("utf-8")
-    except Exception as exc:  # base64 / encoding tidak valid
+    except Exception as exc:
         return {"error": f"Failed to decode base64 SRT: {exc}"}
 
     try:
         translated_srt = translate_srt(srt_content)
-    except Exception as exc:  # SRT rusak / error inferensi
+    except Exception as exc:
         return {"error": f"Translation failed: {exc}"}
 
     translated_srt_base64 = base64.b64encode(
