@@ -13,13 +13,13 @@ push:
 
 build-base:
 	git pull
-	docker build -t urisuzy/transub-base:latest -f Dockerfile-base .
-	docker push urisuzy/transub-base:latest
+	docker build -t urisuzy/transub-base:vllm -f Dockerfile-base .
+	docker push urisuzy/transub-base:vllm
 
 build:
 	git pull
-	docker build -t urisuzy/transub:latest .
-	docker push urisuzy/transub:latest
+	docker build -t urisuzy/transub:vllm .
+	docker push urisuzy/transub:vllm
 
 build-release:
 	git pull

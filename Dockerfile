@@ -1,5 +1,5 @@
 # Gunakan image dasar Python
-FROM urisuzy/transub-base:latest
+FROM urisuzy/transub-base:vllm
 
 # Set work directory di dalam container
 WORKDIR /app
