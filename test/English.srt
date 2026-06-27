@@ -1,0 +1,1548 @@
+1
+00:00:09,750 --> 00:00:13,210
+<font face="Trebuchet MS" size="24">I want it to consume me. Here and now.</font>
+
+2
+00:00:15,900 --> 00:00:20,130
+<font face="Trebuchet MS" size="24">I want it to consume me. Here and now...</font>
+
+3
+00:00:41,740 --> 00:00:42,670
+<font face="Trebuchet MS" size="24">Uh-huh.</font>
+
+4
+00:00:44,410 --> 00:00:46,320
+<font face="Trebuchet MS" size="24">Yeah, that's right.</font>
+
+5
+00:00:46,320 --> 00:00:48,690
+<font size="24"><b>{\an8}<font face="Times New Roman"><font color="#8a807d"><font size="8">(Merchant Copy)
+
+
+
+
+
+<font size="12">Item Reservation Form</font></font></font></font></b></font>
+
+6
+00:00:46,320 --> 00:00:48,690
+<font size="24"><b>{\an8}<font size="10"></font></b><font face="Comic Sans MS"><font color="#bdbab9">Botan Kamiina</font></font></font>
+
+7
+00:00:46,830 --> 00:00:48,350
+<font face="Trebuchet MS" size="24">Those earrings...</font>
+
+8
+00:00:48,690 --> 00:00:51,580
+<font face="Trebuchet MS" size="24">Looks like one of our staff 
+sold them off by mistake.</font>
+
+9
+00:00:52,290 --> 00:00:53,410
+<font face="Trebuchet MS" size="24">Yeah.</font>
+
+10
+00:00:55,150 --> 00:00:57,200
+<font face="Trebuchet MS" size="24">I just found out myself.</font>
+
+11
+00:00:58,560 --> 00:00:59,730
+<font face="Trebuchet MS" size="24"><i>I'm so sorry.</i></font>
+
+12
+00:00:59,730 --> 00:01:01,590
+<font face="Trebuchet MS" size="24"><i>I did my best to warn them.</i></font>
+
+13
+00:01:02,850 --> 00:01:08,710
+<font face="Trebuchet MS" size="24"><i>We get online orders from overseas too,
+so our popular items go out of stock fast.</i></font>
+
+14
+00:01:11,430 --> 00:01:13,400
+<font face="Trebuchet MS" size="24">So cute!</font>
+
+15
+00:01:11,700 --> 00:01:13,400
+<font face="Trebuchet MS" size="24">{\an8}So cute!</font>
+
+16
+00:01:13,400 --> 00:01:14,810
+<font face="Trebuchet MS" size="24">Aren't they, though?</font>
+
+17
+00:01:14,810 --> 00:01:16,090
+<font face="Trebuchet MS" size="24">Miss RA.</font>
+
+18
+00:01:16,090 --> 00:01:19,370
+<font face="Trebuchet MS" size="24">Why don't we get our ears 
+pierced together and wear these?</font>
+
+19
+00:01:19,370 --> 00:01:20,620
+<font face="Trebuchet MS" size="24">Then we'll match.</font>
+
+20
+00:01:20,620 --> 00:01:22,620
+<font face="Trebuchet MS" size="24">Should I hold on to these earrings, then?</font>
+
+21
+00:01:22,620 --> 00:01:23,350
+<font face="Trebuchet MS" size="24">Yes!</font>
+
+22
+00:01:25,260 --> 00:01:26,930
+<font face="Trebuchet MS" size="24">I understand.</font>
+
+23
+00:01:29,470 --> 00:01:33,550
+<font face="Trebuchet MS" size="24">Thank you for letting me know.</font>
+
+24
+00:01:43,960 --> 00:01:49,590
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}Botan Kamiina Fully Blossoms When Drunk</b></font>
+
+25
+00:01:43,960 --> 00:01:49,590
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font color="#da0b57">Botan Kamiina Fully Blossoms When Drunk</font></b></font>
+
+26
+00:02:37,680 --> 00:02:39,140
+<font size="24"><b>{\an8}<font size="36"><font face="Comic Sans MS"><font color="#f0f2e6">Chin-Lan Chang</font></font></font></b></font>
+
+27
+00:02:39,140 --> 00:02:40,680
+<font size="24"><b>{\an8}<font size="30"><font face="Comic Sans MS"><font color="#f0f2e6">Yaeka Kitamori</font></font></font></b></font>
+
+28
+00:02:39,140 --> 00:02:40,680
+<font size="24"><b>{\an8}<font size="30"><font face="Comic Sans MS"><font color="#f0f2e6">Akane Yusa</font></font></font></b></font>
+
+29
+00:02:40,680 --> 00:02:42,220
+<font size="24"><b>{\an8}<font size="36"><font face="Comic Sans MS"><font color="#f0f2e6">Kanade Gujo</font></font></font></b></font>
+
+30
+00:02:50,520 --> 00:02:51,150
+<font size="24"><b>{\an8}<font size="36"><font face="Comic Sans MS"><font color="#f0f2e6">Botan Kamiina</font></font></font></b></font>
+
+31
+00:02:51,730 --> 00:02:52,360
+<font size="24"><b>{\an8}<font size="36"><font face="Comic Sans MS"><font color="#f0f2e6">Ibuki Tonami</font></font></font></b></font>
+
+32
+00:03:00,530 --> 00:03:05,950
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="30">Botan Kamiina</font></b></font>
+
+33
+00:03:00,530 --> 00:03:05,950
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="30">Fully Blossoms</font></b></font>
+
+34
+00:03:00,530 --> 00:03:05,950
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="30">When Drunk</font></b></font>
+
+35
+00:03:00,530 --> 00:03:05,950
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="30"><font color="#e70e5e">Botan Kamiina</font></font></b></font>
+
+36
+00:03:00,530 --> 00:03:05,950
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="30"><font color="#e70e5e">Fully Blossoms</font></font></b></font>
+
+37
+00:03:00,530 --> 00:03:05,950
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="30"><font color="#e70e5e">When Drunk</font></font></b></font>
+
+38
+00:03:14,840 --> 00:03:19,140
+<font face="Trebuchet MS" size="24">This sure is some cold. 
+Just call me Somecold L. Jackson.</font>
+
+39
+00:03:19,970 --> 00:03:20,970
+<font face="Trebuchet MS" size="24">Samuel?</font>
+
+40
+00:03:21,260 --> 00:03:23,720
+<font face="Trebuchet MS" size="24">Call me Some Peckinpah.</font>
+
+41
+00:03:23,720 --> 00:03:25,350
+<font face="Trebuchet MS" size="24"><i>I Am Some<i>.</i></i></font>
+
+42
+00:03:25,350 --> 00:03:27,190
+<font face="Trebuchet MS" size="24">Some 41!</font>
+
+43
+00:03:27,190 --> 00:03:30,190
+<font size="24"><b>{\an8}<font face="Arial Black"><font color="#070e24">Hodosan Ropeway
+Hodo-Sanroku Station</font></font></b></font>
+
+44
+00:03:27,850 --> 00:03:29,520
+<font face="Trebuchet MS" size="24">Put a sock in it.</font>
+
+45
+00:03:31,480 --> 00:03:34,690
+<font face="Trebuchet MS" size="24">Oh, there's no one here yet.</font>
+
+46
+00:03:36,990 --> 00:03:38,530
+<font face="Trebuchet MS" size="24">Let me use the restroom.</font>
+
+47
+00:03:38,530 --> 00:03:40,070
+<font face="Trebuchet MS" size="24">Oh, me too.</font>
+
+48
+00:03:40,490 --> 00:03:42,990
+<font size="24"><b>{\an8}<font face="Georgia"><font color="#0c0f18">Amazake</font></font></b></font>
+
+49
+00:03:40,490 --> 00:03:42,990
+<font size="24"><b>{\an8}<font face="Georgia"><font color="#31436f">Roasted Ginkgo Nuts
+from Chichibu</font></font></b></font>
+
+50
+00:03:42,990 --> 00:03:47,330
+<font face="Trebuchet MS" size="24">It's still dark out. 
+Will we be able to see them?</font>
+
+51
+00:03:42,990 --> 00:03:48,210
+<font size="24"><b>{\an8}<font size="20"><font color="#566075">Pay for items at cashier counter
+<font color="#3e465c">Alcoholic Drinks</font></font></font></b></font>
+
+52
+00:03:47,330 --> 00:03:50,000
+<font face="Trebuchet MS" size="24">Huh? See what?</font>
+
+53
+00:03:52,130 --> 00:03:54,760
+<font face="Trebuchet MS" size="24">Look at this. They sell booze here.</font>
+
+54
+00:03:56,670 --> 00:04:03,220
+<font size="24"><b>{\an8}<font size="16"><font color="#566075">Pay for items at cashier counter
+<font color="#3e465c">Alcoholic Drinks</font></font></font></b></font>
+
+55
+00:03:57,260 --> 00:04:00,930
+<font face="Trebuchet MS" size="24">Miss RA, you're not much 
+of a team player, are you?</font>
+
+56
+00:04:00,930 --> 00:04:02,680
+<font face="Trebuchet MS" size="24">Wh-Why do you say that?!</font>
+
+57
+00:04:05,770 --> 00:04:08,600
+<font face="Trebuchet MS" size="24">I hope we get to see some good clouds.</font>
+
+58
+00:04:09,400 --> 00:04:10,400
+<font face="Trebuchet MS" size="24">Same here.</font>
+
+59
+00:04:11,150 --> 00:04:15,070
+<font face="Trebuchet MS" size="24">I have high hopes based on the big swings 
+in daily temperature we've had lately.</font>
+
+60
+00:04:15,070 --> 00:04:17,070
+<font face="Trebuchet MS" size="24">See, there's what we call 
+radiative cooling...</font>
+
+61
+00:04:17,070 --> 00:04:19,320
+<font size="24"><b>{\an8}<font size="20"><font color="#252028">Hodosan Ropeway</font></font></b></font>
+
+62
+00:04:19,320 --> 00:04:22,070
+<font size="24"><b>{\an8}<font color="#464445">Dispenses <font color="#de2137">pointless <font color="#464445">trinkets not pictured here!</font></font></font></b></font>
+
+63
+00:04:19,990 --> 00:04:22,070
+<font face="Trebuchet MS" size="24">"Dispenses pointless trinkets"...</font>
+
+64
+00:04:22,070 --> 00:04:25,330
+<font size="24"><b>{\an8}<font color="#e0253b">No returns, refunds, or exchanges.</font></b></font>
+
+65
+00:04:22,550 --> 00:04:25,330
+<font face="Trebuchet MS" size="24">"No returns, refunds, or exchanges."</font>
+
+66
+00:04:25,330 --> 00:04:28,410
+<font size="24"><b>{\an8}<font size="8"><font color="#70676f">Dispenses <font color="#9d465e">pointless <font color="#70676f">trinkets not pictured here!</font></font></font></font></b></font>
+
+67
+00:04:25,330 --> 00:04:28,410
+<font size="24"><b>{\an8}<font size="8"><font color="#9d465e">No returns, refunds, or exchanges.</font></font></b></font>
+
+68
+00:04:25,330 --> 00:04:28,410
+<font size="24"><b>{\an8}<font face="Arial Black"><font color="#c39da3">Surprise <font color="#3d89a7">Box</font></font></font></b></font>
+
+69
+00:04:26,040 --> 00:04:27,870
+<font face="Trebuchet MS" size="24">That's a lot of warnings.</font>
+
+70
+00:04:28,790 --> 00:04:31,080
+<font face="Trebuchet MS" size="24">I wonder how long they've been here.</font>
+
+71
+00:04:31,080 --> 00:04:32,170
+<font face="Trebuchet MS" size="24">Right?</font>
+
+72
+00:04:32,170 --> 00:04:33,420
+<font face="Trebuchet MS" size="24">Also...</font>
+
+73
+00:04:33,420 --> 00:04:38,630
+<font size="24"><b>{\an8}<font face="Arial Black"><font color="#4c4956">Mt. Hodo Rope (Large)</font></font></b></font>
+
+74
+00:04:33,420 --> 00:04:38,630
+<font size="24"><b>{\an8}<font size="20"><font face="Arial Black"><font color="#474551">(After tax)</font></font></font></b></font>
+
+75
+00:04:33,880 --> 00:04:38,220
+<font face="Trebuchet MS" size="24">{\an8}I was surprised to see that they 
+sell rope from the ropeway here.</font>
+
+76
+00:04:38,630 --> 00:04:41,390
+<font face="Trebuchet MS" size="24">Can't believe you can even buy the rope.</font>
+
+77
+00:04:41,390 --> 00:04:42,850
+<font face="Trebuchet MS" size="24">Hey.</font>
+
+78
+00:04:43,180 --> 00:04:45,560
+<font face="Trebuchet MS" size="24">They've opened the ropeway.</font>
+
+79
+00:04:45,850 --> 00:04:46,850
+<font face="Trebuchet MS" size="24">All right.</font>
+
+80
+00:05:07,620 --> 00:05:11,960
+<font face="Trebuchet MS" size="24">Isn't it kinda scary when you 
+pass under a ropeway tower?</font>
+
+81
+00:05:11,960 --> 00:05:15,130
+<font face="Trebuchet MS" size="24">The way it lurches reminds me 
+of an amusement park ride.</font>
+
+82
+00:05:20,090 --> 00:05:23,390
+<font face="Trebuchet MS" size="24">It's like the sky and mountains 
+have melted into one...</font>
+
+83
+00:05:24,390 --> 00:05:27,810
+<font face="Trebuchet MS" size="24">A sight you can only see in winter.</font>
+
+84
+00:05:29,810 --> 00:05:31,640
+<font face="Trebuchet MS" size="24">This brief moment in time...</font>
+
+85
+00:05:32,560 --> 00:05:34,310
+<font face="Trebuchet MS" size="24">It's really something special.</font>
+
+86
+00:05:44,870 --> 00:05:47,700
+<font size="24"><b>{\an8}<font size="40"><font face="Times New Roman"><font color="#414046">Panorama Map</font></font></font></b></font>
+
+87
+00:05:49,870 --> 00:05:51,540
+<font face="Trebuchet MS" size="24">I don't see anything.</font>
+
+88
+00:05:51,870 --> 00:05:53,250
+<font face="Trebuchet MS" size="24">What?</font>
+
+89
+00:05:53,250 --> 00:05:54,880
+<font face="Trebuchet MS" size="24">Is this thing broken?</font>
+
+90
+00:05:54,880 --> 00:05:56,540
+<font face="Trebuchet MS" size="24">What are the chances?</font>
+
+91
+00:05:56,880 --> 00:05:58,300
+<font face="Trebuchet MS" size="24">Did you put any coins in?</font>
+
+92
+00:05:58,300 --> 00:05:59,550
+<font face="Trebuchet MS" size="24">Ah!</font>
+
+93
+00:05:59,550 --> 00:06:00,340
+<font face="Trebuchet MS" size="24">Hey, now.</font>
+
+94
+00:06:01,260 --> 00:06:03,220
+<font size="24"><b>{\an8}<font face="Times New Roman"><font color="#c1bbb1">Mt. Hodo (497.1m)
+<font size="20">Environment Agency, Saitama Prefecture</font></font></font></b></font>
+
+95
+00:06:04,390 --> 00:06:06,640
+<font face="Trebuchet MS" size="24">This is the summit?</font>
+
+96
+00:06:06,640 --> 00:06:08,930
+<font face="Trebuchet MS" size="24">Even with the sun shining 
+down, it's so chilly.</font>
+
+97
+00:06:13,310 --> 00:06:14,690
+<font face="Trebuchet MS" size="24">Hey, Senpai.</font>
+
+98
+00:06:17,610 --> 00:06:21,690
+<font face="Trebuchet MS" size="24">If we hold hands, we can stay warm.</font>
+
+99
+00:06:28,580 --> 00:06:30,910
+<font face="Trebuchet MS" size="24">Something wrong with your hand?</font>
+
+100
+00:06:31,830 --> 00:06:32,700
+<font face="Trebuchet MS" size="24">Nope.</font>
+
+101
+00:06:34,500 --> 00:06:35,620
+<font face="Trebuchet MS" size="24">Just that...</font>
+
+102
+00:06:37,710 --> 00:06:43,340
+<font face="Trebuchet MS" size="24">It feels a little cold and empty 
+this time of year.</font>
+
+103
+00:06:45,720 --> 00:06:50,680
+<font face="Trebuchet MS" size="24">Once it gets warmer, the plum blossoms 
+and fukujuso should bloom, at least.</font>
+
+104
+00:06:53,180 --> 00:06:55,350
+<font face="Trebuchet MS" size="24">That's because your shoulders are exposed.</font>
+
+105
+00:06:55,350 --> 00:06:57,350
+<font face="Trebuchet MS" size="24">You can wear my jacket.</font>
+
+106
+00:06:57,350 --> 00:06:58,480
+<font face="Trebuchet MS" size="24">No, thanks.</font>
+
+107
+00:06:59,520 --> 00:07:01,570
+<font face="Trebuchet MS" size="24">Then you'll be cold instead.</font>
+
+108
+00:07:02,650 --> 00:07:06,070
+<font face="Trebuchet MS" size="24">In that case, how about we share a drink?</font>
+
+109
+00:07:06,990 --> 00:07:08,660
+<font size="24"><b>{\an8}<font face="Georgia"><font color="#2b2122">Chichibu Ume<font color="#6e242d">zake</font></font></font></b></font>
+
+110
+00:07:09,370 --> 00:07:11,620
+<font face="Trebuchet MS" size="24">I bought this Buko umeshu 
+before we came up here.</font>
+
+111
+00:07:12,080 --> 00:07:14,080
+<font face="Trebuchet MS" size="24">It's delicious and'll warm you right up.</font>
+
+112
+00:07:18,960 --> 00:07:20,170
+<font face="Trebuchet MS" size="24">Thanks.</font>
+
+113
+00:07:23,630 --> 00:07:24,720
+<font face="Trebuchet MS" size="24">Botan?</font>
+
+114
+00:07:36,890 --> 00:07:38,150
+<font face="Trebuchet MS" size="24">Ibuki?</font>
+
+115
+00:07:40,150 --> 00:07:41,110
+<font face="Trebuchet MS" size="24">Ibuki!</font>
+
+116
+00:07:44,150 --> 00:07:45,570
+<font face="Trebuchet MS" size="24">Check it out, Botan!</font>
+
+117
+00:07:47,030 --> 00:07:49,490
+<font face="Trebuchet MS" size="24">Winter cherry blossoms!</font>
+
+118
+00:07:49,950 --> 00:07:53,370
+<font face="Trebuchet MS" size="24">See? Winter's not so empty, is it?</font>
+
+119
+00:08:02,000 --> 00:08:04,630
+<font face="Trebuchet MS" size="24">Yeah. You're right.</font>
+
+120
+00:08:15,970 --> 00:08:17,850
+<font face="Trebuchet MS" size="24"><i>It's almost Christmas.</i></font>
+
+121
+00:08:19,060 --> 00:08:20,650
+<font face="Trebuchet MS" size="24">Any Christmas Eve plans?</font>
+
+122
+00:08:20,650 --> 00:08:21,900
+<font face="Trebuchet MS" size="24">Spending it alone.</font>
+
+123
+00:08:21,900 --> 00:08:23,770
+<font face="Trebuchet MS" size="24">That's too sad! Let's get a group going!</font>
+
+124
+00:08:23,770 --> 00:08:25,110
+<font face="Trebuchet MS" size="24">Awesome!</font>
+
+125
+00:08:26,070 --> 00:08:28,990
+<font face="Trebuchet MS" size="24"><i>How festive of a holiday is it in Japan?</i></font>
+
+126
+00:08:29,400 --> 00:08:31,450
+<font face="Trebuchet MS" size="24"><i>Something like the Mid-Autumn Festival?</i></font>
+
+127
+00:08:33,160 --> 00:08:36,500
+<font face="Trebuchet MS" size="24">I've never even heard 
+of the Mid-Autumn Festival.</font>
+
+128
+00:08:37,120 --> 00:08:38,080
+<font face="Trebuchet MS" size="24">What?</font>
+
+129
+00:08:38,080 --> 00:08:40,750
+<font face="Trebuchet MS" size="24">Christmas in Taiwan 
+isn't the same as Japan?</font>
+
+130
+00:08:40,750 --> 00:08:42,170
+<font face="Trebuchet MS" size="24">Not at all.</font>
+
+131
+00:08:42,170 --> 00:08:44,380
+<font face="Trebuchet MS" size="24">It's a 360-degree difference!</font>
+
+132
+00:08:44,380 --> 00:08:46,170
+<font face="Trebuchet MS" size="24">You know that's a full circle.</font>
+
+133
+00:08:46,880 --> 00:08:48,670
+<font face="Trebuchet MS" size="24">Do families eat cake together?</font>
+
+134
+00:08:48,670 --> 00:08:49,760
+<font face="Trebuchet MS" size="24">Nope.</font>
+
+135
+00:08:50,180 --> 00:08:52,430
+<font face="Trebuchet MS" size="24">What about couples swapping gifts?</font>
+
+136
+00:08:52,430 --> 00:08:54,810
+<font face="Trebuchet MS" size="24">No way! Bô—lah!</font>
+
+137
+00:08:54,810 --> 00:08:57,350
+<font face="Trebuchet MS" size="24">Huh, it's nothing like Japan.</font>
+
+138
+00:08:57,350 --> 00:08:58,770
+<font face="Trebuchet MS" size="24">Told you.</font>
+
+139
+00:08:59,180 --> 00:09:01,480
+<font face="Trebuchet MS" size="24">A drab, colorless Christmas.</font>
+
+140
+00:09:01,480 --> 00:09:02,520
+<font face="Trebuchet MS" size="24">You think?</font>
+
+141
+00:09:10,900 --> 00:09:13,950
+<font face="Trebuchet MS" size="24">Sorry that I keep dragging you 
+to the bookstore, by the way.</font>
+
+142
+00:09:13,950 --> 00:09:16,290
+<font face="Trebuchet MS" size="24">I don't mind. It's fun.</font>
+
+143
+00:09:21,210 --> 00:09:22,750
+<font face="Trebuchet MS" size="24">What are you here to buy?</font>
+
+144
+00:09:24,460 --> 00:09:28,460
+<font face="Trebuchet MS" size="24">A Foucault book translated into Japanese 
+for the first time, as well as...</font>
+
+145
+00:09:28,930 --> 00:09:30,760
+<font face="Trebuchet MS" size="24">something to read over winter break.</font>
+
+146
+00:09:32,610 --> 00:09:35,510
+<font face="Trebuchet MS" size="24">This author has a new book out?</font>
+
+147
+00:09:35,510 --> 00:09:37,390
+<font face="Trebuchet MS" size="24">Another hefty one, I see!</font>
+
+148
+00:09:49,110 --> 00:09:51,240
+<font face="Trebuchet MS" size="24">You really like books, huh?</font>
+
+149
+00:09:51,650 --> 00:09:52,650
+<font face="Trebuchet MS" size="24">Mm.</font>
+
+150
+00:09:55,160 --> 00:09:56,330
+<font face="Trebuchet MS" size="24">It's settled.</font>
+
+151
+00:09:59,750 --> 00:10:00,750
+<font face="Trebuchet MS" size="24">Huh?</font>
+
+152
+00:10:00,750 --> 00:10:03,830
+<font face="Trebuchet MS" size="24">Let's do a gift swap. With books.</font>
+
+153
+00:10:04,330 --> 00:10:06,040
+<font face="Trebuchet MS" size="24">Wh-Why?</font>
+
+154
+00:10:06,040 --> 00:10:07,790
+<font face="Trebuchet MS" size="24">For Christmas!</font>
+
+155
+00:10:08,800 --> 00:10:11,840
+<font face="Trebuchet MS" size="24">Isn't that what couples do here?</font>
+
+156
+00:10:33,900 --> 00:10:43,250
+<font size="24"><b>{\an8}<font size="28"><font face="Arial Black"><font color="#8495d4">30 Minutes</font></font></font></b></font>
+
+157
+00:10:34,240 --> 00:10:38,740
+<font face="Trebuchet MS" size="24">We'll each pick a book in thirty minutes, 
+then meet up at the café outside.</font>
+
+158
+00:10:38,740 --> 00:10:42,830
+<font face="Trebuchet MS" size="24"><i>I'm scared that no matter what I choose, 
+I'll end up swinging and missing!</i></font>
+
+159
+00:10:45,370 --> 00:10:51,170
+<font face="Trebuchet MS" size="24"><i>Or should I stop selfishly trying for 
+home runs when it comes to </i>prestations<i>?</i></font>
+
+160
+00:10:52,340 --> 00:10:55,630
+<font face="Trebuchet MS" size="24"><i>Wait, "prestation"? Just call it a gift!</i></font>
+
+161
+00:10:55,630 --> 00:10:57,220
+<font face="Trebuchet MS" size="24"><i>Who am I, Mauss?</i></font>
+
+162
+00:10:58,930 --> 00:11:00,260
+<font face="Trebuchet MS" size="24"><i>I'm deflecting...</i></font>
+
+163
+00:11:00,760 --> 00:11:06,270
+<font face="Trebuchet MS" size="24"><i>And isn't it arrogant to be like, 
+"I hope it makes her happy" to begin with?</i></font>
+
+164
+00:11:06,730 --> 00:11:10,190
+<font face="Trebuchet MS" size="24"><i>That said, it's hard to choose a book 
+without that mindset.</i></font>
+
+165
+00:11:12,820 --> 00:11:18,780
+<font face="Trebuchet MS" size="24"><i>I can't even tell if I'm thinking about 
+the books or about Chin-Lan anymore.</i></font>
+
+166
+00:11:19,370 --> 00:11:23,160
+<font face="Trebuchet MS" size="24"><i>"There is nothing in all the world 
+that is ever once and simply resolved."</i></font>
+
+167
+00:11:23,750 --> 00:11:27,000
+<font face="Trebuchet MS" size="24"><i>Hideo Kobayashi was right 
+on the money with that one.</i></font>
+
+168
+00:11:35,220 --> 00:11:39,180
+<font face="Trebuchet MS" size="24"><i>I want to know more about her.</i></font>
+
+169
+00:11:42,640 --> 00:11:44,100
+<font face="Trebuchet MS" size="24">The one I got...</font>
+
+170
+00:11:44,980 --> 00:11:45,770
+<font face="Trebuchet MS" size="24">is this!</font>
+
+171
+00:11:46,850 --> 00:11:50,520
+<font face="Trebuchet MS" size="24">It's like an anthology 
+of contemporary Taiwanese poetry.</font>
+
+172
+00:11:50,520 --> 00:11:52,820
+<font face="Trebuchet MS" size="24">Chen Li's an interesting poet.</font>
+
+173
+00:11:52,820 --> 00:11:54,610
+<font face="Trebuchet MS" size="24">I hope you like it.</font>
+
+174
+00:11:56,240 --> 00:11:57,700
+<font face="Trebuchet MS" size="24">Thanks.</font>
+
+175
+00:11:58,820 --> 00:12:01,320
+<font face="Trebuchet MS" size="24">Um, do you like poetry?</font>
+
+176
+00:12:04,040 --> 00:12:06,960
+<font face="Trebuchet MS" size="24">I don't know much about it, but yes.</font>
+
+177
+00:12:07,900 --> 00:12:09,330
+<font face="Trebuchet MS" size="24">Here are your drinks.</font>
+
+178
+00:12:11,060 --> 00:12:14,760
+<font face="Trebuchet MS" size="24">I watched a movie about 
+Taiwanese poets way back when.</font>
+
+179
+00:12:15,170 --> 00:12:19,470
+<font face="Trebuchet MS" size="24">It was the first time I really thought 
+about Japan's influence on Taiwan.</font>
+
+180
+00:12:19,840 --> 00:12:23,430
+<font face="Trebuchet MS" size="24">And just earlier, that memory 
+suddenly came rushing back to me.</font>
+
+181
+00:12:24,140 --> 00:12:29,980
+<font face="Trebuchet MS" size="24">I want to show you more of 
+those parts of me, Kanade.</font>
+
+182
+00:12:38,200 --> 00:12:46,950
+<font face="Trebuchet MS" size="24">I may not be very good at talking 
+about myself or my feelings...</font>
+
+183
+00:12:49,000 --> 00:12:49,930
+<font face="Trebuchet MS" size="24">But here.</font>
+
+184
+00:12:51,960 --> 00:12:53,340
+<font face="Trebuchet MS" size="24">A photography book?</font>
+
+185
+00:12:53,340 --> 00:12:54,290
+<font face="Trebuchet MS" size="24">Actually...</font>
+
+186
+00:12:56,800 --> 00:12:58,420
+<font face="Trebuchet MS" size="24">Picture postcards...</font>
+
+187
+00:13:01,130 --> 00:13:04,930
+<font face="Trebuchet MS" size="24">They're postcards of photos taken 
+by one of my favorite movie directors.</font>
+
+188
+00:13:07,720 --> 00:13:09,810
+<font face="Trebuchet MS" size="24">If you'd like,</font>
+
+189
+00:13:10,100 --> 00:13:11,190
+<font face="Trebuchet MS" size="24">one day...</font>
+
+190
+00:13:16,980 --> 00:13:22,240
+<font face="Trebuchet MS" size="24">I'd love it if you'd write about yourself 
+and send them to me,</font>
+
+191
+00:13:22,530 --> 00:13:23,530
+<font face="Trebuchet MS" size="24">Chin-Lan.</font>
+
+192
+00:13:27,990 --> 00:13:30,580
+<font face="Trebuchet MS" size="24">Yes, I will.</font>
+
+193
+00:13:32,000 --> 00:13:37,000
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="20">Botan Kamiina</font></b></font>
+
+194
+00:13:32,000 --> 00:13:37,000
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="20">Fully Blossoms</font></b></font>
+
+195
+00:13:32,000 --> 00:13:37,000
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="20">When Drunk</font></b></font>
+
+196
+00:13:32,000 --> 00:13:37,000
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="20"><font color="#d2196a">Botan Kamiina</font></font></b></font>
+
+197
+00:13:32,000 --> 00:13:37,000
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="20"><font color="#d2196a">Fully Blossoms</font></font></b></font>
+
+198
+00:13:32,000 --> 00:13:37,000
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="20"><font color="#d2196a">When Drunk</font></font></b></font>
+
+199
+00:13:37,000 --> 00:13:42,010
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="20">Botan Kamiina</font></b></font>
+
+200
+00:13:37,000 --> 00:13:42,010
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="20">Fully Blossoms</font></b></font>
+
+201
+00:13:37,000 --> 00:13:42,010
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="20">When Drunk</font></b></font>
+
+202
+00:13:37,000 --> 00:13:42,010
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="20"><font color="#d2196a">Botan Kamiina</font></font></b></font>
+
+203
+00:13:37,000 --> 00:13:42,010
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="20"><font color="#d2196a">Fully Blossoms</font></font></b></font>
+
+204
+00:13:37,000 --> 00:13:42,010
+<font face="Times New Roman" size="24" color="#0e0c0d"><b>{\an8}<font size="20"><font color="#d2196a">When Drunk</font></font></b></font>
+
+205
+00:13:51,850 --> 00:13:55,520
+<font face="Trebuchet MS" size="24">Look at that pesky snow coming down.</font>
+
+206
+00:13:56,900 --> 00:14:02,110
+<font face="Trebuchet MS" size="24">I wonder if Echigo-Yuzawa gets as much 
+snow buildup as Tateyama-Sanroku.</font>
+
+207
+00:14:02,370 --> 00:14:03,860
+<font face="Trebuchet MS" size="24">Now then, Botan.</font>
+
+208
+00:14:04,870 --> 00:14:07,870
+<font face="Trebuchet MS" size="24">I'll be the one taking 
+the lead for this trip.</font>
+
+209
+00:14:08,580 --> 00:14:09,330
+<font face="Trebuchet MS" size="24">Okay?</font>
+
+210
+00:14:13,160 --> 00:14:17,460
+<font size="24"><b>{\an8}<font size="20"><font face="Arial Black"><font color="#919397">Echigo-Yuzawa Station</font></font></font></b></font>
+
+211
+00:14:13,710 --> 00:14:16,080
+<font face="Trebuchet MS" size="24">Yes, I can't wait.</font>
+
+212
+00:14:21,880 --> 00:14:23,880
+<font face="Trebuchet MS" size="24">Nothing says Niigata like rice!</font>
+
+213
+00:14:23,880 --> 00:14:25,680
+<font face="Trebuchet MS" size="24">Nothing says rice like sake!</font>
+
+214
+00:14:25,680 --> 00:14:29,060
+<font face="Trebuchet MS" size="24">And nothing says sake like Ponshukan!</font>
+
+215
+00:14:30,350 --> 00:14:32,350
+<font face="Trebuchet MS" size="24">What is Ponshukan, you ask?</font>
+
+216
+00:14:32,350 --> 00:14:39,270
+<font face="Trebuchet MS" size="24">A specialty food shop selling all sorts of
+Niigata specialties new even to locals!</font>
+
+217
+00:14:39,860 --> 00:14:45,280
+<font face="Trebuchet MS" size="24">There's even a sake bath of Echigo-Yuzawa
+hot spring water blended with sake.</font>
+
+218
+00:14:45,280 --> 00:14:54,290
+<font size="24"><b>{\an8}<font face="Times New Roman"><font color="#48371d">Ponshukan</font></font></b></font>
+
+219
+00:14:45,280 --> 00:14:54,290
+<font size="24"><b>{\an8}<font size="18"><font face="Times New Roman"><font color="#48371d">Kikizake
+Bansho</font></font></font></b></font>
+
+220
+00:14:45,990 --> 00:14:52,120
+<font face="Trebuchet MS" size="24">And at Kikizake Bansho, you can try sake
+samples from all of Niigata's breweries.</font>
+
+221
+00:14:52,120 --> 00:14:53,660
+<font face="Trebuchet MS" size="24">Isn't it wonderful?</font>
+
+222
+00:14:54,290 --> 00:14:56,250
+<font size="24"><b>{\an8}<font face="Times New Roman"><font color="#53655d">Ponshukan</font></font></b></font>
+
+223
+00:14:56,580 --> 00:14:59,210
+<font face="Trebuchet MS" size="24">I've always wanted to come here!</font>
+
+224
+00:14:59,670 --> 00:15:03,260
+<font face="Trebuchet MS" size="24">They sell Ponshukan-exclusive 
+sakes here, too!</font>
+
+225
+00:15:03,260 --> 00:15:05,760
+<font face="Trebuchet MS" size="24"><i>She's really enjoying herself.</i></font>
+
+226
+00:15:08,350 --> 00:15:11,720
+<font face="Trebuchet MS" size="24"><i>Why did I just feel a wave of relief?</i></font>
+
+227
+00:15:13,100 --> 00:15:17,270
+<font face="Trebuchet MS" size="24">Did I force you 
+into coming out here?</font>
+
+228
+00:15:21,480 --> 00:15:22,940
+<font face="Trebuchet MS" size="24">Let's check it out already!</font>
+
+229
+00:15:25,240 --> 00:15:28,160
+<font face="Trebuchet MS" size="24"><i>It always comes back to alcohol.</i></font>
+
+230
+00:15:39,170 --> 00:15:40,380
+<font face="Trebuchet MS" size="24">Botan?</font>
+
+231
+00:15:41,710 --> 00:15:44,170
+<font size="24"><b>{\an8}<font size="20"><font face="Times New Roman"><font color="#f7eeba">Breweries of Echigo
+<font size="30">Kikizake Bansho
+<font size="16">Echigo-Yuzawa Station Branch</font></font></font></font></font></b></font>
+
+232
+00:15:44,970 --> 00:15:48,340
+<font face="Trebuchet MS" size="24">Th-There must be a hundred kinds here!</font>
+
+233
+00:15:48,720 --> 00:15:52,470
+<font face="Trebuchet MS" size="24">What? These are all sake from Niigata?</font>
+
+234
+00:15:52,760 --> 00:15:58,230
+<font face="Trebuchet MS" size="24">Some of these sake cost multiple 
+of these coins we just bought.</font>
+
+235
+00:15:58,230 --> 00:16:01,730
+<font face="Trebuchet MS" size="24">Um, I'll go with this one. Kaganoi.</font>
+
+236
+00:16:01,730 --> 00:16:03,980
+<font face="Trebuchet MS" size="24">Wait, that was fast! Why that one?</font>
+
+237
+00:16:03,980 --> 00:16:14,700
+<font size="24"><b>{\an8}<font color="#e1dbc9">m 0 0 l 100 0 100 100 0 100</font></b></font>
+
+238
+00:16:03,980 --> 00:16:14,700
+<font size="24"><b>{\an8}<font size="16"><font face="Comic Sans MS"><font color="#504732">Ponshukan Benchmark Sake
+
+This sake is the benchmark for Kikizake
+Bansho by which we grade flavors using
+stars, as well as our own comments.
+We hope it can serve as a reference
+for your sake tasting.</font></font></font></b></font>
+
+239
+00:16:03,980 --> 00:16:10,160
+<font face="Trebuchet MS" size="24">It says this sake is the benchmark used to
+compare flavors for all the other sake.</font>
+
+240
+00:16:10,160 --> 00:16:13,450
+<font face="Trebuchet MS" size="24">What? Then I pick that one, too.</font>
+
+241
+00:16:13,450 --> 00:16:15,870
+<font face="Trebuchet MS" size="24">Looks like someone's a copycat.</font>
+
+242
+00:16:40,060 --> 00:16:42,020
+<font face="Trebuchet MS" size="24">Which one should I try next?</font>
+
+243
+00:16:42,020 --> 00:16:45,570
+<font face="Trebuchet MS" size="24">I still have some left, so you 
+can look by yourself, Ibuki.</font>
+
+244
+00:16:46,150 --> 00:16:46,990
+<font face="Trebuchet MS" size="24">Sure!</font>
+
+245
+00:16:57,700 --> 00:16:59,330
+<font face="Trebuchet MS" size="24">It's delicious.</font>
+
+246
+00:17:01,170 --> 00:17:07,510
+<font face="Trebuchet MS" size="24"><i>Drinking sake standing up, 
+like it's coffee from a vending machine.</i></font>
+
+247
+00:17:10,680 --> 00:17:16,310
+<font face="Trebuchet MS" size="24"><i>Would I ever have done this 
+if I hadn't met Ibuki?</i></font>
+
+248
+00:17:17,430 --> 00:17:19,020
+<font face="Trebuchet MS" size="24">Botan!</font>
+
+249
+00:17:19,020 --> 00:17:21,480
+<font face="Trebuchet MS" size="24">We should come back here again.</font>
+
+250
+00:17:22,150 --> 00:17:23,350
+<font face="Trebuchet MS" size="24">And when we do...</font>
+
+251
+00:17:25,320 --> 00:17:27,480
+<font face="Trebuchet MS" size="24">Let's try all the ones they have together!</font>
+
+252
+00:17:27,480 --> 00:17:28,150
+<font face="Trebuchet MS" size="24">Okay?</font>
+
+253
+00:17:30,110 --> 00:17:31,420
+<font face="Trebuchet MS" size="24">Sounds good.</font>
+
+254
+00:17:31,780 --> 00:17:35,080
+<font face="Trebuchet MS" size="24">They were selling masu cups outside...</font>
+
+255
+00:17:40,040 --> 00:17:44,040
+<font face="Trebuchet MS" size="24"><i>How many years will that take?</i></font>
+
+256
+00:17:45,290 --> 00:17:50,340
+<font face="Trebuchet MS" size="24"><i>By then, we might not 
+be in college anymore.</i></font>
+
+257
+00:17:51,010 --> 00:17:55,180
+<font face="Trebuchet MS" size="24"><i>Why, we might not even 
+be living in the dorm.</i></font>
+
+258
+00:17:57,220 --> 00:18:01,600
+<font face="Trebuchet MS" size="24"><i>How many times are left 
+for us to drink together?</i></font>
+
+259
+00:18:04,730 --> 00:18:08,230
+<font size="24"><b>{\an8}<font size="20"><font color="#532203">Matsukaze - Seven</font></font></b></font>
+
+260
+00:18:05,400 --> 00:18:07,770
+<font face="Trebuchet MS" size="24">Please enjoy your stay with us.</font>
+
+261
+00:18:13,530 --> 00:18:15,740
+<font face="Trebuchet MS" size="24">What a lovely room!</font>
+
+262
+00:18:15,740 --> 00:18:16,780
+<font face="Trebuchet MS" size="24">Don't you think, Ibuki?</font>
+
+263
+00:18:16,780 --> 00:18:20,120
+<font face="Trebuchet MS" size="24">Two beer bottles, cola, and club soda!</font>
+
+264
+00:18:20,120 --> 00:18:21,540
+<font face="Trebuchet MS" size="24">Wow!</font>
+
+265
+00:18:21,540 --> 00:18:25,420
+<font face="Trebuchet MS" size="24">The fridge is full of so many 
+complimentary drinks!</font>
+
+266
+00:18:23,790 --> 00:18:28,880
+<font size="24"><b>{\an8}<font size="30"><font face="Arial Black"><font color="#5487c7">Menacing</font></font></font></b></font>
+
+267
+00:18:25,420 --> 00:18:26,840
+<font face="Trebuchet MS" size="24">Are you listening?</font>
+
+268
+00:18:27,380 --> 00:18:28,880
+<font face="Trebuchet MS" size="24">Yeah! Sorry!</font>
+
+269
+00:18:29,300 --> 00:18:32,170
+<font face="Trebuchet MS" size="24">I-I love how big these windows are!</font>
+
+270
+00:18:32,170 --> 00:18:34,340
+<font face="Trebuchet MS" size="24">Let's start by putting 
+the beer bottle down.</font>
+
+271
+00:18:39,100 --> 00:18:41,270
+<font face="Trebuchet MS" size="24">The beds are pushed together!</font>
+
+272
+00:18:41,270 --> 00:18:43,350
+<font face="Trebuchet MS" size="24">Kinda naughty, if you ask me.</font>
+
+273
+00:18:51,530 --> 00:18:53,030
+<font face="Trebuchet MS" size="24">Huh?</font>
+
+274
+00:18:55,160 --> 00:18:56,570
+<font face="Trebuchet MS" size="24">What is it?</font>
+
+275
+00:19:02,120 --> 00:19:05,290
+<font face="Trebuchet MS" size="24">You're so cute, Ibuki.</font>
+
+276
+00:19:09,500 --> 00:19:12,630
+<font face="Trebuchet MS" size="24">W-We have some time until dinner.</font>
+
+277
+00:19:12,630 --> 00:19:14,300
+<font face="Trebuchet MS" size="24">Wanna check out the big bath?</font>
+
+278
+00:19:17,470 --> 00:19:18,510
+<font face="Trebuchet MS" size="24">Nuh-uh.</font>
+
+279
+00:19:21,310 --> 00:19:23,310
+<font face="Trebuchet MS" size="24">I'd rather be alone with you.</font>
+
+280
+00:19:31,070 --> 00:19:32,440
+<font face="Trebuchet MS" size="24">I want...</font>
+
+281
+00:19:34,650 --> 00:19:36,030
+<font face="Trebuchet MS" size="24">to go further.</font>
+
+282
+00:19:37,660 --> 00:19:38,320
+<font face="Trebuchet MS" size="24">Can I?</font>
+
+283
+00:19:40,240 --> 00:19:42,990
+<font face="Trebuchet MS" size="24">I'll only ask once.</font>
+
+284
+00:19:43,330 --> 00:19:45,960
+<font face="Trebuchet MS" size="24">No more after that.</font>
+
+285
+00:19:45,960 --> 00:19:47,960
+<font face="Trebuchet MS" size="24">Um, wait...</font>
+
+286
+00:19:47,960 --> 00:19:50,130
+<font face="Trebuchet MS" size="24">I'm not ready to...</font>
+
+287
+00:20:01,640 --> 00:20:02,930
+<font face="Trebuchet MS" size="24">Not ready?</font>
+
+288
+00:20:05,060 --> 00:20:06,390
+<font face="Trebuchet MS" size="24">I see now.</font>
+
+289
+00:20:06,890 --> 00:20:11,190
+<font face="Trebuchet MS" size="24">So I was the only one ready?</font>
+
+290
+00:20:13,270 --> 00:20:14,440
+<font face="Trebuchet MS" size="24">Ibuki.</font>
+
+291
+00:20:15,110 --> 00:20:16,570
+<font face="Trebuchet MS" size="24">You and I...</font>
+
+292
+00:20:17,760 --> 00:20:21,830
+<font face="Trebuchet MS" size="24">We stopped being friends, 
+so what are we now?</font>
+
+293
+00:20:41,680 --> 00:20:42,600
+<font face="Trebuchet MS" size="24">What?</font>
+
+294
+00:20:44,760 --> 00:20:48,020
+<font face="Trebuchet MS" size="24">These are... How?</font>
+
+295
+00:20:48,020 --> 00:20:50,520
+<font face="Trebuchet MS" size="24">She said these earrings were sold out.</font>
+
+296
+00:20:50,520 --> 00:20:53,020
+<font face="Trebuchet MS" size="24">Sorry. I'm sorry.</font>
+
+297
+00:20:54,020 --> 00:20:57,150
+<font face="Trebuchet MS" size="24">I made you worry again.</font>
+
+298
+00:20:57,650 --> 00:21:01,280
+<font face="Trebuchet MS" size="24">I was the one 
+who bought them a while back.</font>
+
+299
+00:21:01,280 --> 00:21:04,580
+<font face="Trebuchet MS" size="24">But I couldn't work up the courage...</font>
+
+300
+00:21:04,580 --> 00:21:05,790
+<font face="Trebuchet MS" size="24">Why did...</font>
+
+301
+00:21:21,470 --> 00:21:22,550
+<font face="Trebuchet MS" size="24">Take this...</font>
+
+302
+00:21:23,220 --> 00:21:26,180
+<font face="Trebuchet MS" size="24">and pierce my ear.</font>
+
+303
+00:21:27,100 --> 00:21:30,310
+<font face="Trebuchet MS" size="24">I wanted you to be the one to do it.</font>
+
+304
+00:21:32,730 --> 00:21:35,400
+<font face="Trebuchet MS" size="24">Before we went any further.</font>
+
+305
+00:21:36,270 --> 00:21:40,360
+<font face="Trebuchet MS" size="24">And, if you'd like, um...</font>
+
+306
+00:21:50,160 --> 00:21:51,370
+<font face="Trebuchet MS" size="24">Of course.</font>
+
+307
+00:21:53,250 --> 00:21:56,210
+<font face="Trebuchet MS" size="24">Do me as well.</font>
+
+308
+00:22:01,880 --> 00:22:05,920
+<font size="24"><b>{\an8}</b><font color="#050408">Dorm Group Chat (6)</font></font>
+
+309
+00:22:02,050 --> 00:22:05,920
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">Just a little past Hanno now. We ate in Ikebukuro,
+so we'll be heading straight home.</font></font>
+
+310
+00:22:03,260 --> 00:22:05,920
+<font size="24"><b>{\an8}<font size="16"></font></b><font color="#30405c">Chin-Lan</font></font>
+
+311
+00:22:03,260 --> 00:22:05,920
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">I understand</font></font>
+
+312
+00:22:04,390 --> 00:22:05,920
+<font size="24"><b>{\an8}<font size="16"></font></b><font color="#30405c">Kanade</font></font>
+
+313
+00:22:04,430 --> 00:22:05,920
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">Have a safe trip back</font></font>
+
+314
+00:22:07,260 --> 00:22:08,550
+<font size="24"><b>{\an8}<font size="16"></font></b><font color="#30405c">Kanade</font></font>
+
+315
+00:22:07,260 --> 00:22:08,550
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">Have a safe trip back</font></font>
+
+316
+00:22:07,260 --> 00:22:08,550
+<font size="24"><b>{\an8}<font size="16"></font></b><font color="#30405c">Yaeka</font></font>
+
+317
+00:22:07,260 --> 00:22:08,550
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">I bet you forgot, but we're cleaning up
+the entire dorm tomorrow.</font></font>
+
+318
+00:22:07,260 --> 00:22:08,550
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">Wait, we are?</font></font>
+
+319
+00:22:08,430 --> 00:22:10,050
+<font size="24"><b>{\an8}<font size="16"></font></b><font color="#30405c">Yaeka</font></font>
+
+320
+00:22:08,430 --> 00:22:10,050
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">I bet you forgot, but we're cleaning up
+the entire dorm tomorrow.</font></font>
+
+321
+00:22:08,430 --> 00:22:10,050
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">Wait, we are?</font></font>
+
+322
+00:22:08,430 --> 00:22:10,050
+<font size="24"><b>{\an8}<font size="16"></font></b><font color="#30405c">Yaeka</font></font>
+
+323
+00:22:08,470 --> 00:22:10,050
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">That's the same thing Akane said...</font></font>
+
+324
+00:22:09,930 --> 00:22:11,010
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">I bet you forgot, but we're cleaning up
+the entire dorm tomorrow.</font></font>
+
+325
+00:22:09,930 --> 00:22:11,010
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">Wait, we are?</font></font>
+
+326
+00:22:09,930 --> 00:22:11,010
+<font size="24"><b>{\an8}<font size="16"></font></b><font color="#30405c">Yaeka</font></font>
+
+327
+00:22:09,930 --> 00:22:11,010
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">That's the same thing Akane said...</font></font>
+
+328
+00:22:09,930 --> 00:22:11,010
+<font size="24"><b>{\an8}<font size="16"></font></b><font color="#30405c">Akane</font></font>
+
+329
+00:22:09,930 --> 00:22:11,010
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">Yeah, and?</font></font>
+
+330
+00:22:10,930 --> 00:22:12,510
+<font size="24"><b>{\an8}<font size="16"></font></b><font color="#30405c">Akane</font></font>
+
+331
+00:22:10,930 --> 00:22:12,510
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">Yeah, and?</font></font>
+
+332
+00:22:10,930 --> 00:22:12,510
+<font size="24"><b>{\an8}<font size="28"><font face="Arial Black"><font color="#3b2d2e">Drool...</font></font></font></b></font>
+
+333
+00:22:12,430 --> 00:22:15,850
+<font size="24"><b>{\an8}<font size="20"></font></b><font color="#111111">We can talk about the clean-up once we get back.
+I'll let you know when we're at the station.</font></font>
+
+334
+00:22:19,730 --> 00:22:23,450
+<font face="Trebuchet MS" size="24">I knew that the beds 
+would be pushed together.</font>
+
+335
+00:22:23,450 --> 00:22:24,030
+<font face="Trebuchet MS" size="24">What?</font>
+
+336
+00:22:24,570 --> 00:22:27,490
+<font face="Trebuchet MS" size="24">I mean, I was the one 
+who made the reservation.</font>
+
+337
+00:22:30,120 --> 00:22:31,450
+<font face="Trebuchet MS" size="24">How naughty.</font>
+
+338
+00:22:31,450 --> 00:22:32,460
+<font face="Trebuchet MS" size="24">Huh?</font>
+
+339
+00:22:36,290 --> 00:22:37,500
+<font face="Trebuchet MS" size="24">Does it hurt?</font>
+
+340
+00:22:37,500 --> 00:22:39,380
+<font face="Trebuchet MS" size="24">No, it feels fine now.</font>
+
+341
+00:22:40,130 --> 00:22:41,340
+<font face="Trebuchet MS" size="24">And you?</font>
+
+342
+00:22:41,340 --> 00:22:42,420
+<font face="Trebuchet MS" size="24">Same here.</font>
+
+343
+00:22:43,130 --> 00:22:46,220
+<font face="Trebuchet MS" size="24">Six weeks for the starter earring...</font>
+
+344
+00:22:46,220 --> 00:22:47,970
+<font face="Trebuchet MS" size="24">I said I'm sorry.</font>
+
+345
+00:22:47,970 --> 00:22:50,470
+<font face="Trebuchet MS" size="24">We can change them out together 
+when the time comes.</font>
+
+346
+00:22:50,470 --> 00:22:51,520
+<font face="Trebuchet MS" size="24">Yeah.</font>
+
+347
+00:22:51,520 --> 00:22:52,810
+<font face="Trebuchet MS" size="24">Besides...</font>
+
+348
+00:22:53,230 --> 00:22:55,820
+<font face="Trebuchet MS" size="24">We bought some liquor 
+that'll take even longer.</font>
+
+349
+00:22:55,220 --> 00:22:56,770
+<font size="24"><b>{\an8}</b><font face="Times New Roman"><font color="#474030">Reservation Certificate</font></font></font>
+
+350
+00:22:55,220 --> 00:22:56,770
+<font size="24"><b>{\an8}<font size="20"></font></b><font face="Times New Roman"><font color="#474030">Ibuki Tonami    Botan Kamiina</font></font></font>
+
+351
+00:22:55,220 --> 00:22:56,770
+<font size="24"><b>{\an8}<font size="13"></font></b><font face="Times New Roman"><font color="#474030">We have received your reservation for the memorial shochu Menko Mirai.
+It will be kept safe in our dedicated room-temperature
+storage space until the delivery date.</font></font></font>
+
+352
+00:22:55,220 --> 00:22:56,770
+<font size="24"><b>{\an8}</b><font face="Times New Roman"><font color="#474030"><font size="12">Receiving Party
+
+
+<font size="16">Botan Kamiina</font></font></font></font></font>
+
+353
+00:22:55,220 --> 00:22:56,770
+<font size="24"><b>{\an8}</b><font face="Times New Roman"><font color="#474030"><font size="12">Sending Party
+
+
+<font size="16">Ibuki Tonami</font></font></font></font></font>
+
+354
+00:22:57,520 --> 00:23:00,110
+<font face="Trebuchet MS" size="24">They'll keep it in storage 
+for up to five years.</font>
+
+355
+00:23:00,530 --> 00:23:04,320
+<font face="Trebuchet MS" size="24">By then, we might be living 
+far apart from each other...</font>
+
+356
+00:23:04,320 --> 00:23:07,240
+<font face="Trebuchet MS" size="24">We won't be apart.</font>
+
+357
+00:23:07,240 --> 00:23:08,120
+<font face="Trebuchet MS" size="24">What?</font>
+
+358
+00:23:08,660 --> 00:23:11,080
+<font face="Trebuchet MS" size="24">Let's make sure we're not, Botan.</font>
+
+359
+00:23:13,540 --> 00:23:15,420
+<font face="Trebuchet MS" size="24">I'm feeling a little thirsty.</font>
+
+360
+00:23:17,880 --> 00:23:19,460
+<font face="Trebuchet MS" size="24">Why don't we have a drink?</font>
+
+361
+00:23:27,010 --> 00:23:30,350
+<font size="18"><b>{\an8}Translation: John K.</b></font>
+
+362
+00:23:30,350 --> 00:23:34,310
+<font size="18"><b>{\an8}Editing & Typesetting: Geoff Mazzolini
+Subtitle Timing: Krzysztof Kunc</b></font>
+
+363
+00:23:34,310 --> 00:23:37,270
+<font size="18"><b>{\an8}Quality Check: Alicia Ashby
+Translation Check: Sriram Gurunathan</b></font>
+
