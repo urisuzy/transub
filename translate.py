@@ -1,5 +1,4 @@
 import base64
-import json
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor
@@ -25,9 +24,6 @@ MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "2"))
 # Batas token output per request. Untuk chunk besar (mis. 100 baris) harus
 # cukup besar agar balasan tidak terpotong (~ baris * 60 token + penomoran).
 MAX_TOKENS = int(os.environ.get("MAX_TOKENS", "8192"))
-# Scan pass (Pass 1) cuma output JSON kecil, jadi MAX_TOKENS jauh lebih kecil
-# dari MAX_TOKENS terjemahan. Cukup untuk ~CHUNK_SIZE * 20 token.
-MAX_TOKENS_SCAN = int(os.environ.get("MAX_TOKENS_SCAN", "1024"))
 # Matikan thinking/reasoning (default ON di deepseek-v4-flash). Untuk tugas
 # terjemahan, reasoning hampir tak berguna tapi membengkakkan output token
 # (= biaya terbesar). Set DISABLE_THINKING=0 untuk mengaktifkan lagi.
@@ -67,24 +63,6 @@ SYSTEM_PROMPT = (
     "sumber. Yang penting natural, bukan jumlah kata.\n"
     '   - Contoh: "You bet!" -> "Jelas!" (pendek)\n'
     '   - Contoh: "Sure." -> "Tentu aja." (lebih panjang)'
-)
-
-# Prompt khusus Pass 1 (scan glossary). Model cuma diminta output JSON object
-# {sumber_inggris: padanan_indonesia} untuk istilah yg perlu konsisten.
-SCAN_SYSTEM_PROMPT = (
-    "Kamu ahli glosarium subtitle film. Dari potongan teks berikut, "
-    "identifikasi SEMUA istilah yang harus diterjemahkan secara konsisten "
-    "di seluruh film: nama orang, julukan/nickname, nama tempat, gelar, "
-    "dan istilah khusus yang kemungkinan muncul berulang.\n\n"
-    "Untuk setiap istilah, berikan padanan bahasa Indonesia yang natural "
-    "dan luwes (gaya subtitle film, bukan kaku).\n\n"
-    "Output WAJIB JSON object dengan format:\n"
-    '{"sumber_inggris": "padanan_indonesia", ...}\n\n'
-    "Aturan ketat:\n"
-    "- Hanya istilah yang muncul di teks input.\n"
-    "- Jangan sertakan kata umum (the, and, of, dll) atau kata yang cuma "
-    "muncul sekali tanpa konteks pengulangan.\n"
-    "- Kalau teks tidak punya istilah yang perlu di-glosarium-kan, output {}."
 )
 
 # Penggantian kata pasca-proses (opsional).
@@ -229,19 +207,10 @@ def _find_cut(src_texts, cue_idx, tgt, prev):
     return target
 
 
-def postprocess(text, glossary=None):
+def postprocess(text):
     text = text.strip().strip('"').strip()
     for old_word, new_word in replacements:
         text = text.replace(old_word, new_word)
-    # Enforce glossary (auto-detected di Pass 1). Cari EN source yang lolos
-    # ke output terjemahan, ganti dengan padanan ID yang sudah di-lock.
-    # Sortir by length desc supaya istilah panjang diproses dulu (menghindari
-    # replace sebagian dari istilah panjang oleh istilah pendek).
-    if glossary:
-        for en in sorted(glossary.keys(), key=len, reverse=True):
-            id_ = glossary[en]
-            pattern = re.compile(rf"\b{re.escape(en)}\b", re.IGNORECASE)
-            text = pattern.sub(id_, text)
     return text
 
 
@@ -268,98 +237,17 @@ def _chat(user_content):
     raise last_err
 
 
-def _chat_with_tokens(user_content, system_prompt, max_tokens):
-    """Sama seperti _chat tapi system prompt & max_tokens bisa di-override.
-
-    Dipakai Pass 1 (scan glossary) yang outputnya JSON kecil dan butuh
-    system prompt khusus.
-    """
-    last_err = None
-    extra_body = {"reasoning": {"enabled": False}} if DISABLE_THINKING else None
-    for _ in range(MAX_RETRIES + 1):
-        try:
-            resp = client.chat.completions.create(
-                model=MODEL,
-                temperature=TEMPERATURE,
-                max_tokens=max_tokens,
-                extra_body=extra_body,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_content},
-                ],
-            )
-            return resp.choices[0].message.content or ""
-        except Exception as exc:
-            last_err = exc
-    raise last_err
-
-
-def translate_single(sentence, glossary=None):
+def translate_single(sentence):
     """Fallback: terjemahkan satu kalimat saja (dipakai jika batch gagal align)."""
     out = _chat(
         "Terjemahkan kalimat subtitle Inggris berikut ke bahasa Indonesia. "
         "Keluarkan HANYA terjemahannya, tanpa label atau penjelasan:\n\n"
         + sentence
     )
-    return postprocess(out, glossary)
+    return postprocess(out)
 
 
-def scan_terms(chunk):
-    """Pass 1: ekstrak glossary {EN: ID} dari sebuah chunk kalimat sumber.
-
-    Sequential (dipanggil dari build_glossary). Kalau JSON model rusak
-    atau kosong, kembalikan {} — defensive: pipeline utama tetap jalan,
-    cuma kehilangan konsistensi untuk istilah di chunk itu.
-    """
-    numbered = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(chunk))
-    user = (
-        f"Identifikasi istilah yang harus konsisten dari {len(chunk)} baris "
-        "subtitle Inggris berikut:\n\n" + numbered
-    )
-    text = _chat_with_tokens(user, SCAN_SYSTEM_PROMPT, MAX_TOKENS_SCAN)
-
-    # Cari JSON object di output. Model kadang membungkus dengan
-    # ```json ... ``` atau teks preamble.
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if not match:
-        print(f"  scan: no JSON in response (chunk size {len(chunk)}): {text!r}")
-        return {}
-    try:
-        data = json.loads(match.group())
-    except json.JSONDecodeError as exc:
-        print(f"  scan: JSON parse error ({exc}): {text!r}")
-        return {}
-
-    # Sanitasi: hanya str -> str, key non-empty, value non-empty.
-    cleaned = {}
-    for k, v in data.items():
-        if isinstance(k, str) and isinstance(v, str) and k.strip() and v.strip():
-            cleaned[k.strip()] = v.strip()
-    return cleaned
-
-
-def build_glossary(chunks):
-    """Pass 1 (orchestrator): scan semua chunk, gabung jadi satu glossary.
-
-    Sequential karena scan murah (output JSON kecil) dan biar 'first
-    writer wins' — kalau istilah muncul di chunk 1 dan chunk 7, versi
-    chunk 1 yang dipakai. Iterasi langsung (bukan paralel) supaya
-    log urut dan debugging mudah.
-    """
-    merged = {}
-    for idx, chunk in enumerate(chunks, start=1):
-        terms = scan_terms(chunk)
-        for en, id_ in terms.items():
-            # Dedupe case-insensitive: kalau sudah ada entri dengan lower(en)
-            # yang sama, JANGAN timpa. First-seen wins.
-            if en.lower() not in {k.lower() for k in merged}:
-                merged[en] = id_
-        print(f"  scan chunk {idx}/{len(chunks)}: +{len(terms)} term(s), "
-              f"glossary total: {len(merged)}")
-    return merged
-
-
-def translate_chunk(chunk, glossary=None):
+def translate_chunk(chunk):
     """Terjemahkan sekumpulan kalimat berurutan dalam satu request (bernomor).
 
     Kalimat dalam satu chunk saling jadi konteks. Output diparse balik per
@@ -367,24 +255,12 @@ def translate_chunk(chunk, glossary=None):
     balasan terpotong), chunk DIBELAH DUA dan dicoba ulang secara rekursif --
     bukan langsung jatuh ke per-kalimat -- supaya chunk besar tetap hemat
     request. Per-kalimat hanya dipakai sebagai dasar (chunk berukuran 1).
-
-    `glossary` (opsional): dict {EN: ID_locked} dari Pass 1. Disuntik ke
-    user prompt agar model pakai terjemahan konsisten, dan ditegakkan
-    ulang di postprocess() sebagai safety net.
     """
     n = len(chunk)
     if n == 1:
-        return [translate_single(chunk[0], glossary)]
+        return [translate_single(chunk[0])]
 
     numbered = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(chunk))
-    glossary_block = ""
-    if glossary:
-        lines = [f'- "{en}" -> "{id_}"' for en, id_ in glossary.items()]
-        glossary_block = (
-            "ISTILAH TETAP (WAJIB konsisten di seluruh subtitle ini):\n"
-            + "\n".join(lines)
-            + "\n\n"
-        )
     user = (
         f"Terjemahkan {n} baris subtitle Inggris berikut ke bahasa Indonesia.\n"
         "Aturan ketat:\n"
@@ -393,7 +269,6 @@ def translate_chunk(chunk, glossary=None):
         "- Satu baris input = satu baris output. JANGAN menggabung atau "
         "memecah baris.\n"
         "- Natural dan luwes; jangan menambahkan penjelasan apa pun.\n\n"
-        + glossary_block
         + numbered
     )
     text = _chat(user)
@@ -409,8 +284,8 @@ def translate_chunk(chunk, glossary=None):
         # Penomoran tidak utuh -> belah dua dan coba ulang tiap separuh.
         mid = n // 2
         print(f"  chunk align gagal (n={n}), pecah jadi {mid}+{n - mid}")
-        return translate_chunk(chunk[:mid], glossary) + translate_chunk(chunk[mid:], glossary)
-    return [postprocess(r, glossary) for r in results]
+        return translate_chunk(chunk[:mid]) + translate_chunk(chunk[mid:])
+    return [postprocess(r) for r in results]
 
 
 def translate_srt(srt_content):
@@ -431,28 +306,13 @@ def translate_srt(srt_content):
     print(f"Reconstructed into {len(sentences)} sentences from "
           f"{len(subtitles)} cues.")
 
-    # 2) Bagi jadi chunk
+    # 2) Bagi jadi chunk, terjemahkan paralel
     chunks = [sentences[i:i + CHUNK_SIZE]
               for i in range(0, len(sentences), CHUNK_SIZE)]
-
-    # 2a) Pass 1: scan glossary (sequential, murah) untuk konsistensi istilah
-    print(f"Pass 1: scanning {len(chunks)} chunks for glossary...")
-    glossary = build_glossary(chunks)
-    if glossary:
-        # Print ringkas: full dict bisa panjang
-        preview = list(glossary.items())[:5]
-        print(f"Locked glossary ({len(glossary)} terms): {preview}"
-              f"{' ...' if len(glossary) > 5 else ''}")
-    else:
-        print("Pass 1: no recurring terms detected, proceeding without glossary.")
-
-    # 2b) Pass 2: terjemahkan paralel dengan glossary terkunci
-    print(f"Pass 2: translating {len(chunks)} chunks (size {CHUNK_SIZE}, "
+    print(f"Translating {len(chunks)} chunks (size {CHUNK_SIZE}, "
           f"concurrency {CONCURRENCY})...")
     with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:
-        chunk_results = list(
-            pool.map(lambda c: translate_chunk(c, glossary), chunks)
-        )
+        chunk_results = list(pool.map(translate_chunk, chunks))
     translated_sentences = [s for res in chunk_results for s in res]
 
     # 3) Pecah tiap kalimat terjemahan kembali ke cue aslinya
