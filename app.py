@@ -15,6 +15,7 @@ class TranslateRequest(BaseModel):
 
 class TranslateResponse(BaseModel):
     translated_srt_base64: str
+    token_usage: dict | None = None
 
 
 @app.get("/health")
@@ -35,11 +36,16 @@ async def translate(req: TranslateRequest):
     try:
         # translate_srt bersifat blocking (panggilan HTTP + threadpool internal),
         # jalankan di threadpool agar event loop tidak terblok.
-        translated_srt = await run_in_threadpool(translate_srt, srt_content)
+        result = await run_in_threadpool(translate_srt, srt_content)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Translation failed: {exc}")
 
+    # result = {"srt": "...", "token_usage": {scan, translate, total}}
+    translated_srt = result["srt"]
     translated_srt_base64 = base64.b64encode(
         translated_srt.encode("utf-8")
     ).decode("utf-8")
-    return TranslateResponse(translated_srt_base64=translated_srt_base64)
+    return TranslateResponse(
+        translated_srt_base64=translated_srt_base64,
+        token_usage=result.get("token_usage"),
+    )

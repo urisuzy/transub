@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor
@@ -24,6 +25,12 @@ MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "2"))
 # Batas token output per request. Untuk chunk besar (mis. 100 baris) harus
 # cukup besar agar balasan tidak terpotong (~ baris * 60 token + penomoran).
 MAX_TOKENS = int(os.environ.get("MAX_TOKENS", "8192"))
+# Scan pass (Pass 1) cuma output JSON kecil, jadi MAX_TOKENS jauh lebih kecil
+# dari MAX_TOKENS terjemahan. Cukup untuk ~CHUNK_SIZE * 20 token.
+MAX_TOKENS_SCAN = int(os.environ.get("MAX_TOKENS_SCAN", "1024"))
+# Retry budget kalau scan pertama return content kosong (reasoning makan
+# semua token). Cuma dipakai kalau chunk tertentu gagal — adaptive retry.
+MAX_TOKENS_SCAN_RETRY = int(os.environ.get("MAX_TOKENS_SCAN_RETRY", "4096"))
 # Matikan thinking/reasoning (default ON di deepseek-v4-flash). Untuk tugas
 # terjemahan, reasoning hampir tak berguna tapi membengkakkan output token
 # (= biaya terbesar). Set DISABLE_THINKING=0 untuk mengaktifkan lagi.
@@ -32,6 +39,57 @@ DISABLE_THINKING = os.environ.get("DISABLE_THINKING", "1").lower() not in (
 )
 
 client = OpenAI(base_url=BASE_URL, api_key=API_KEY or "EMPTY")
+
+# Accumulator token usage per phase. Di-reset di awal translate_srt.
+# Di-update via _record_usage() yang dipanggil dari _chat / _chat_with_tokens.
+_TOKEN_USAGE = {
+    "scan": {"calls": 0, "prompt": 0, "completion": 0,
+             "reasoning": 0, "cached": 0},
+    "translate": {"calls": 0, "prompt": 0, "completion": 0,
+                  "reasoning": 0, "cached": 0},
+}
+
+
+def _record_usage(phase, resp):
+    """Tambah usage dari satu API call ke _TOKEN_USAGE[phase].
+
+    Defensive: kalau resp.usage tidak ada atau field tertentu missing,
+    lewati (jangan crash).
+    """
+    bucket = _TOKEN_USAGE[phase]
+    bucket["calls"] += 1
+    usage = getattr(resp, "usage", None)
+    if usage is None:
+        return
+    bucket["prompt"] += getattr(usage, "prompt_tokens", 0) or 0
+    bucket["completion"] += getattr(usage, "completion_tokens", 0) or 0
+    details = getattr(usage, "completion_tokens_details", None)
+    if details is not None:
+        bucket["reasoning"] += getattr(details, "reasoning_tokens", 0) or 0
+    prompt_details = getattr(usage, "prompt_tokens_details", None)
+    if prompt_details is not None:
+        bucket["cached"] += getattr(prompt_details, "cached_tokens", 0) or 0
+
+
+def _print_usage_summary():
+    """Cetak ringkasan token usage per phase + total."""
+    total = {"calls": 0, "prompt": 0, "completion": 0,
+             "reasoning": 0, "cached": 0}
+    print("\n=== TOKEN USAGE ===")
+    for phase, b in _TOKEN_USAGE.items():
+        if b["calls"] == 0:
+            continue
+        print(f"  {phase:9s}: {b['calls']:3d} calls | "
+              f"prompt={b['prompt']:>7,} | "
+              f"completion={b['completion']:>7,} "
+              f"(reasoning={b['reasoning']:>6,}, cached={b['cached']:>6,})")
+        for k in total:
+            total[k] += b[k]
+    if total["calls"] > 0:
+        print(f"  {'TOTAL':9s}: {total['calls']:3d} calls | "
+              f"prompt={total['prompt']:>7,} | "
+              f"completion={total['completion']:>7,} "
+              f"(reasoning={total['reasoning']:>6,}, cached={total['cached']:>6,})")
 
 SYSTEM_PROMPT = (
     "Kamu penerjemah subtitle film profesional dari bahasa Inggris ke bahasa "
@@ -63,6 +121,24 @@ SYSTEM_PROMPT = (
     "sumber. Yang penting natural, bukan jumlah kata.\n"
     '   - Contoh: "You bet!" -> "Jelas!" (pendek)\n'
     '   - Contoh: "Sure." -> "Tentu aja." (lebih panjang)'
+)
+
+# Prompt khusus Pass 1 (scan glossary). Model cuma diminta output JSON object
+# {sumber_inggris: padanan_indonesia} untuk istilah yg perlu konsisten.
+SCAN_SYSTEM_PROMPT = (
+    "Kamu ahli glosarium subtitle film. Dari potongan teks berikut, "
+    "identifikasi SEMUA istilah yang harus diterjemahkan secara konsisten "
+    "di seluruh film: nama orang, julukan/nickname, nama tempat, gelar, "
+    "dan istilah khusus yang kemungkinan muncul berulang.\n\n"
+    "Untuk setiap istilah, berikan padanan bahasa Indonesia yang natural "
+    "dan luwes (gaya subtitle film, bukan kaku).\n\n"
+    "Output WAJIB JSON object dengan format:\n"
+    '{"sumber_inggris": "padanan_indonesia", ...}\n\n'
+    "Aturan ketat:\n"
+    "- Hanya istilah yang muncul di teks input.\n"
+    "- Jangan sertakan kata umum (the, and, of, dll) atau kata yang cuma "
+    "muncul sekali tanpa konteks pengulangan.\n"
+    "- Kalau teks tidak punya istilah yang perlu di-glosarium-kan, output {}."
 )
 
 # Penggantian kata pasca-proses (opsional).
@@ -207,10 +283,19 @@ def _find_cut(src_texts, cue_idx, tgt, prev):
     return target
 
 
-def postprocess(text):
+def postprocess(text, glossary=None):
     text = text.strip().strip('"').strip()
     for old_word, new_word in replacements:
         text = text.replace(old_word, new_word)
+    # Enforce glossary (auto-detected di Pass 1). Cari EN source yang lolos
+    # ke output terjemahan, ganti dengan padanan ID yang sudah di-lock.
+    # Sortir by length desc supaya istilah panjang diproses dulu (menghindari
+    # replace sebagian dari istilah panjang oleh istilah pendek).
+    if glossary:
+        for en in sorted(glossary.keys(), key=len, reverse=True):
+            id_ = glossary[en]
+            pattern = re.compile(rf"\b{re.escape(en)}\b", re.IGNORECASE)
+            text = pattern.sub(id_, text)
     return text
 
 
@@ -231,23 +316,122 @@ def _chat(user_content):
                     {"role": "user", "content": user_content},
                 ],
             )
+            _record_usage("translate", resp)
             return resp.choices[0].message.content or ""
         except Exception as exc:  # error jaringan / API
             last_err = exc
     raise last_err
 
 
-def translate_single(sentence):
+def _chat_with_tokens(user_content, system_prompt, max_tokens):
+    """Sama seperti _chat tapi system prompt & max_tokens bisa di-override.
+
+    Dipakai Pass 1 (scan glossary) yang outputnya JSON kecil dan butuh
+    system prompt khusus.
+    """
+    last_err = None
+    extra_body = {"reasoning": {"enabled": False}} if DISABLE_THINKING else None
+    for _ in range(MAX_RETRIES + 1):
+        try:
+            resp = client.chat.completions.create(
+                model=MODEL,
+                temperature=TEMPERATURE,
+                max_tokens=max_tokens,
+                extra_body=extra_body,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content},
+                ],
+            )
+            _record_usage("scan", resp)
+            return resp.choices[0].message.content or ""
+        except Exception as exc:
+            last_err = exc
+    raise last_err
+
+
+def translate_single(sentence, glossary=None):
     """Fallback: terjemahkan satu kalimat saja (dipakai jika batch gagal align)."""
     out = _chat(
         "Terjemahkan kalimat subtitle Inggris berikut ke bahasa Indonesia. "
         "Keluarkan HANYA terjemahannya, tanpa label atau penjelasan:\n\n"
         + sentence
     )
-    return postprocess(out)
+    return postprocess(out, glossary)
 
 
-def translate_chunk(chunk):
+def scan_terms(chunk):
+    """Pass 1: ekstrak glossary {EN: ID} dari sebuah chunk kalimat sumber.
+
+    Sequential (dipanggil dari build_glossary). Kalau JSON model rusak
+    atau kosong, kembalikan {} — defensive: pipeline utama tetap jalan,
+    cuma kehilangan konsistensi untuk istilah di chunk itu.
+
+    Adaptive retry: kalau panggilan murah (MAX_TOKENS_SCAN) return content
+    kosong (biasanya karena reasoning makan semua token budget), retry
+    SEKALI dengan MAX_TOKENS_SCAN_RETRY. Cost: 1 extra call HANYA kalau
+    yang pertama gagal — best case zero overhead.
+    """
+    numbered = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(chunk))
+    user = (
+        f"Identifikasi istilah yang harus konsisten dari {len(chunk)} baris "
+        "subtitle Inggris berikut:\n\n" + numbered
+    )
+    text = _chat_with_tokens(user, SCAN_SYSTEM_PROMPT, MAX_TOKENS_SCAN)
+
+    # Adaptive retry: content kosong / no-JSON biasanya artinya reasoning
+    # makan semua MAX_TOKENS_SCAN. Retry dengan budget lebih besar.
+    if not text or "{" not in text:
+        print(f"  scan: empty response, retrying with "
+              f"{MAX_TOKENS_SCAN_RETRY} tokens")
+        text = _chat_with_tokens(user, SCAN_SYSTEM_PROMPT, MAX_TOKENS_SCAN_RETRY)
+
+    if not text:
+        print(f"  scan: still empty after retry (chunk size {len(chunk)})")
+        return {}
+
+    # Cari JSON object di output. Model kadang membungkus dengan
+    # ```json ... ``` atau teks preamble.
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if not match:
+        print(f"  scan: no JSON in response (chunk size {len(chunk)}): {text!r}")
+        return {}
+    try:
+        data = json.loads(match.group())
+    except json.JSONDecodeError as exc:
+        print(f"  scan: JSON parse error ({exc}): {text!r}")
+        return {}
+
+    # Sanitasi: hanya str -> str, key non-empty, value non-empty.
+    cleaned = {}
+    for k, v in data.items():
+        if isinstance(k, str) and isinstance(v, str) and k.strip() and v.strip():
+            cleaned[k.strip()] = v.strip()
+    return cleaned
+
+
+def build_glossary(chunks):
+    """Pass 1 (orchestrator): scan semua chunk, gabung jadi satu glossary.
+
+    Sequential karena scan murah (output JSON kecil) dan biar 'first
+    writer wins' — kalau istilah muncul di chunk 1 dan chunk 7, versi
+    chunk 1 yang dipakai. Iterasi langsung (bukan paralel) supaya
+    log urut dan debugging mudah.
+    """
+    merged = {}
+    for idx, chunk in enumerate(chunks, start=1):
+        terms = scan_terms(chunk)
+        for en, id_ in terms.items():
+            # Dedupe case-insensitive: kalau sudah ada entri dengan lower(en)
+            # yang sama, JANGAN timpa. First-seen wins.
+            if en.lower() not in {k.lower() for k in merged}:
+                merged[en] = id_
+        print(f"  scan chunk {idx}/{len(chunks)}: +{len(terms)} term(s), "
+              f"glossary total: {len(merged)}")
+    return merged
+
+
+def translate_chunk(chunk, glossary=None):
     """Terjemahkan sekumpulan kalimat berurutan dalam satu request (bernomor).
 
     Kalimat dalam satu chunk saling jadi konteks. Output diparse balik per
@@ -255,12 +439,24 @@ def translate_chunk(chunk):
     balasan terpotong), chunk DIBELAH DUA dan dicoba ulang secara rekursif --
     bukan langsung jatuh ke per-kalimat -- supaya chunk besar tetap hemat
     request. Per-kalimat hanya dipakai sebagai dasar (chunk berukuran 1).
+
+    `glossary` (opsional): dict {EN: ID_locked} dari Pass 1. Disuntik ke
+    user prompt agar model pakai terjemahan konsisten, dan ditegakkan
+    ulang di postprocess() sebagai safety net.
     """
     n = len(chunk)
     if n == 1:
-        return [translate_single(chunk[0])]
+        return [translate_single(chunk[0], glossary)]
 
     numbered = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(chunk))
+    glossary_block = ""
+    if glossary:
+        lines = [f'- "{en}" -> "{id_}"' for en, id_ in glossary.items()]
+        glossary_block = (
+            "ISTILAH TETAP (WAJIB konsisten di seluruh subtitle ini):\n"
+            + "\n".join(lines)
+            + "\n\n"
+        )
     user = (
         f"Terjemahkan {n} baris subtitle Inggris berikut ke bahasa Indonesia.\n"
         "Aturan ketat:\n"
@@ -269,6 +465,7 @@ def translate_chunk(chunk):
         "- Satu baris input = satu baris output. JANGAN menggabung atau "
         "memecah baris.\n"
         "- Natural dan luwes; jangan menambahkan penjelasan apa pun.\n\n"
+        + glossary_block
         + numbered
     )
     text = _chat(user)
@@ -284,12 +481,59 @@ def translate_chunk(chunk):
         # Penomoran tidak utuh -> belah dua dan coba ulang tiap separuh.
         mid = n // 2
         print(f"  chunk align gagal (n={n}), pecah jadi {mid}+{n - mid}")
-        return translate_chunk(chunk[:mid]) + translate_chunk(chunk[mid:])
-    return [postprocess(r) for r in results]
+        return translate_chunk(chunk[:mid], glossary) + translate_chunk(chunk[mid:], glossary)
+    return [postprocess(r, glossary) for r in results]
+
+
+def _build_usage_summary():
+    """Bangun dict ringkasan token usage per-phase + total.
+
+    Shape: {
+      'scan':     {calls, prompt, completion, reasoning, cached},
+      'translate':{calls, prompt, completion, reasoning, cached},
+      'total':    {calls, prompt, completion, reasoning, cached},
+    }
+    """
+    total = {"calls": 0, "prompt": 0, "completion": 0,
+             "reasoning": 0, "cached": 0}
+    summary = {}
+    for phase, b in _TOKEN_USAGE.items():
+        summary[phase] = dict(b)
+        for k in total:
+            total[k] += b[k]
+    summary["total"] = total
+    return summary
+
+
+def _print_usage_summary():
+    """Cetak ringkasan token usage per phase + total."""
+    summary = _build_usage_summary()
+    print("\n=== TOKEN USAGE ===")
+    for phase in ("scan", "translate", "total"):
+        b = summary[phase]
+        if b["calls"] == 0 and phase == "total":
+            continue
+        label = phase.upper() if phase == "total" else phase
+        print(f"  {label:9s}: {b['calls']:3d} calls | "
+              f"prompt={b['prompt']:>7,} | "
+              f"completion={b['completion']:>7,} "
+              f"(reasoning={b['reasoning']:>6,}, cached={b['cached']:>6,})")
 
 
 def translate_srt(srt_content):
-    """Menerjemahkan konten SRT EN->ID via API cloud (batch + rekonstruksi)."""
+    """Menerjemahkan konten SRT EN->ID via API cloud (batch + rekonstruksi).
+
+    Return:
+        dict: {
+          'srt': str (SRT hasil terjemahan),
+          'token_usage': {scan, translate, total} per _build_usage_summary
+        }
+    """
+    # Reset token accumulator untuk run ini.
+    for phase in _TOKEN_USAGE:
+        for k in _TOKEN_USAGE[phase]:
+            _TOKEN_USAGE[phase][k] = 0
+
     subtitles = list(srt.parse(srt_content))
     print(f"Total subtitles before filter: {len(subtitles)}")
 
@@ -298,7 +542,8 @@ def translate_srt(srt_content):
     print(f"Total subtitles after filter: {len(subtitles)}")
 
     if not subtitles:
-        return ""
+        _print_usage_summary()
+        return {"srt": "", "token_usage": _build_usage_summary()}
 
     # 1) Gabungkan cue -> kalimat utuh
     groups = group_into_sentences(subtitles)
@@ -306,13 +551,28 @@ def translate_srt(srt_content):
     print(f"Reconstructed into {len(sentences)} sentences from "
           f"{len(subtitles)} cues.")
 
-    # 2) Bagi jadi chunk, terjemahkan paralel
+    # 2) Bagi jadi chunk
     chunks = [sentences[i:i + CHUNK_SIZE]
               for i in range(0, len(sentences), CHUNK_SIZE)]
-    print(f"Translating {len(chunks)} chunks (size {CHUNK_SIZE}, "
+
+    # 2a) Pass 1: scan glossary (sequential, murah) untuk konsistensi istilah
+    print(f"Pass 1: scanning {len(chunks)} chunks for glossary...")
+    glossary = build_glossary(chunks)
+    if glossary:
+        # Print ringkas: full dict bisa panjang
+        preview = list(glossary.items())[:5]
+        print(f"Locked glossary ({len(glossary)} terms): {preview}"
+              f"{' ...' if len(glossary) > 5 else ''}")
+    else:
+        print("Pass 1: no recurring terms detected, proceeding without glossary.")
+
+    # 2b) Pass 2: terjemahkan paralel dengan glossary terkunci
+    print(f"Pass 2: translating {len(chunks)} chunks (size {CHUNK_SIZE}, "
           f"concurrency {CONCURRENCY})...")
     with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:
-        chunk_results = list(pool.map(translate_chunk, chunks))
+        chunk_results = list(
+            pool.map(lambda c: translate_chunk(c, glossary), chunks)
+        )
     translated_sentences = [s for res in chunk_results for s in res]
 
     # 3) Pecah tiap kalimat terjemahan kembali ke cue aslinya
@@ -327,7 +587,11 @@ def translate_srt(srt_content):
     for new_index, sub in enumerate(out_subs, start=1):
         sub.index = new_index
 
-    return srt.compose(out_subs)
+    _print_usage_summary()
+    return {
+        "srt": srt.compose(out_subs),
+        "token_usage": _build_usage_summary(),
+    }
 
 
 def handler(event):
@@ -344,12 +608,16 @@ def handler(event):
         return {"error": f"Failed to decode base64 SRT: {exc}"}
 
     try:
-        translated_srt = translate_srt(srt_content)
+        result = translate_srt(srt_content)
     except Exception as exc:
         return {"error": f"Translation failed: {exc}"}
 
+    translated_srt = result["srt"]
     translated_srt_base64 = base64.b64encode(
         translated_srt.encode("utf-8")
     ).decode("utf-8")
 
-    return {"translated_srt_base64": translated_srt_base64}
+    return {
+        "translated_srt_base64": translated_srt_base64,
+        "token_usage": result["token_usage"],
+    }
