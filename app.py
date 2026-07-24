@@ -16,6 +16,7 @@ class TranslateRequest(BaseModel):
 class TranslateResponse(BaseModel):
     translated_srt_base64: str
     token_usage: dict | None = None
+    cached: bool = False
 
 
 @app.get("/health")
@@ -40,7 +41,7 @@ async def translate(req: TranslateRequest):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Translation failed: {exc}")
 
-    # result = {"srt": "...", "token_usage": {scan, translate, total}}
+    # result = {"srt": "...", "token_usage": {...}, "cached": bool}
     translated_srt = result["srt"]
     translated_srt_base64 = base64.b64encode(
         translated_srt.encode("utf-8")
@@ -48,4 +49,5 @@ async def translate(req: TranslateRequest):
     return TranslateResponse(
         translated_srt_base64=translated_srt_base64,
         token_usage=result.get("token_usage"),
+        cached=result.get("cached", False),
     )

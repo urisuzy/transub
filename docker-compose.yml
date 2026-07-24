@@ -5,8 +5,14 @@ services:
     container_name: transub
     restart: always
     env_file: .env
+    environment:
+      TRANSLATION_CACHE_ENABLED: "${TRANSLATION_CACHE_ENABLED:-1}"
+      TRANSLATION_CACHE_PATH: "${TRANSLATION_CACHE_PATH:-/data/translations.sqlite3}"
+      TRANSLATION_CACHE_VERSION: "${TRANSLATION_CACHE_VERSION:-1}"
     ports:
       - "${PORT:-8000}:8000"
+    volumes:
+      - transub-cache:/data
     networks:
       - transub-net
     # FastAPI. Endpoint: POST http://localhost:${PORT}/translate
@@ -21,3 +27,6 @@ services:
 networks:
   transub-net:
     external: true
+
+volumes:
+  transub-cache:

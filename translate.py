@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import json
 import os
 import re
@@ -6,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import srt
 from openai import OpenAI
+from translation_cache import SQLiteTranslationCache, translation_key_lock
 
 # =============================================================================
 # Konfigurasi endpoint cloud (OpenAI-compatible)
@@ -38,7 +40,19 @@ DISABLE_THINKING = os.environ.get("DISABLE_THINKING", "1").lower() not in (
     "0", "false", "no", "",
 )
 
+CACHE_ENABLED = os.environ.get("TRANSLATION_CACHE_ENABLED", "1").lower() not in (
+    "0", "false", "no", "",
+)
+CACHE_PATH = os.environ.get(
+    "TRANSLATION_CACHE_PATH",
+    "data/translations.sqlite3",
+)
+# Naikkan versi ini (atau env-nya) untuk membatalkan seluruh cache setelah
+# perubahan pipeline yang tidak tercakup oleh fingerprint otomatis.
+CACHE_VERSION = os.environ.get("TRANSLATION_CACHE_VERSION", "1")
+
 client = OpenAI(base_url=BASE_URL, api_key=API_KEY or "EMPTY")
+translation_cache = SQLiteTranslationCache(CACHE_PATH)
 
 # Accumulator token usage per phase. Di-reset di awal translate_srt.
 # Di-update via _record_usage() yang dipanggil dari _chat / _chat_with_tokens.
@@ -505,6 +519,16 @@ def _build_usage_summary():
     return summary
 
 
+def _empty_usage_summary():
+    empty = {"calls": 0, "prompt": 0, "completion": 0,
+             "reasoning": 0, "cached": 0}
+    return {
+        "scan": dict(empty),
+        "translate": dict(empty),
+        "total": dict(empty),
+    }
+
+
 def _print_usage_summary():
     """Cetak ringkasan token usage per phase + total."""
     summary = _build_usage_summary()
@@ -520,7 +544,92 @@ def _print_usage_summary():
               f"(reasoning={b['reasoning']:>6,}, cached={b['cached']:>6,})")
 
 
+def _translation_cache_identity(srt_content):
+    """Bangun cache key dari sumber dan semua input yang memengaruhi hasil."""
+    source_sha256 = hashlib.sha256(srt_content.encode("utf-8")).hexdigest()
+    fingerprint = {
+        "version": CACHE_VERSION,
+        "base_url": BASE_URL,
+        "model": MODEL,
+        "chunk_size": CHUNK_SIZE,
+        "temperature": TEMPERATURE,
+        "max_tokens": MAX_TOKENS,
+        "max_tokens_scan": MAX_TOKENS_SCAN,
+        "max_tokens_scan_retry": MAX_TOKENS_SCAN_RETRY,
+        "disable_thinking": DISABLE_THINKING,
+        "system_prompt": SYSTEM_PROMPT,
+        "scan_system_prompt": SCAN_SYSTEM_PROMPT,
+        "replacements": replacements,
+    }
+    payload = json.dumps(
+        fingerprint,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    cache_key = hashlib.sha256(
+        f"{source_sha256}\n{payload}".encode("utf-8")
+    ).hexdigest()
+    return cache_key, source_sha256
+
+
+def _get_cached_translation(cache_key):
+    try:
+        return translation_cache.get(cache_key)
+    except Exception as exc:
+        # Cache tidak boleh membuat layanan penerjemahan utama gagal.
+        print(f"Translation cache read failed: {exc}")
+        return None
+
+
+def _set_cached_translation(cache_key, source_sha256, translated_srt):
+    try:
+        translation_cache.set(
+            cache_key=cache_key,
+            source_sha256=source_sha256,
+            model=MODEL,
+            translated_srt=translated_srt,
+        )
+    except Exception as exc:
+        print(f"Translation cache write failed: {exc}")
+
+
 def translate_srt(srt_content):
+    """Terjemahkan SRT, atau ambil hasil identik dari cache SQLite."""
+    if not CACHE_ENABLED:
+        result = _translate_srt_uncached(srt_content)
+        result["cached"] = False
+        return result
+
+    cache_key, source_sha256 = _translation_cache_identity(srt_content)
+    cached_srt = _get_cached_translation(cache_key)
+    if cached_srt is not None:
+        print(f"Translation cache hit: {cache_key[:12]}")
+        return {
+            "srt": cached_srt,
+            "token_usage": _empty_usage_summary(),
+            "cached": True,
+        }
+
+    # Double-check setelah mengambil per-key lock. Request identik yang datang
+    # bersamaan akan menunggu dan memakai hasil request pertama.
+    with translation_key_lock(cache_key):
+        cached_srt = _get_cached_translation(cache_key)
+        if cached_srt is not None:
+            print(f"Translation cache hit after wait: {cache_key[:12]}")
+            return {
+                "srt": cached_srt,
+                "token_usage": _empty_usage_summary(),
+                "cached": True,
+            }
+
+        result = _translate_srt_uncached(srt_content)
+        _set_cached_translation(cache_key, source_sha256, result["srt"])
+        result["cached"] = False
+        return result
+
+
+def _translate_srt_uncached(srt_content):
     """Menerjemahkan konten SRT EN->ID via API cloud (batch + rekonstruksi).
 
     Return:
@@ -620,4 +729,5 @@ def handler(event):
     return {
         "translated_srt_base64": translated_srt_base64,
         "token_usage": result["token_usage"],
+        "cached": result.get("cached", False),
     }
