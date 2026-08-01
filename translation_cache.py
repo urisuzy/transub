@@ -94,7 +94,7 @@ class SQLiteTranslationCache:
 
     def set_step(self, cache_key, step, result):
         self._initialize()
-        result_json = json.dumps(result, ensure_ascii=False, sort_keys=True)
+        result_json = json.dumps(result, ensure_ascii=False)
         with self._connect() as connection:
             connection.execute(
                 """

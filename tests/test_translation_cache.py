@@ -1,7 +1,9 @@
+import io
 import tempfile
 import threading
 import time
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -112,6 +114,89 @@ class SQLiteTranslationCacheTests(unittest.TestCase):
             self.assertEqual(second, first)
             chat.assert_called_once()
 
+    def test_parsed_empty_scan_is_reused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+            with (
+                patch.object(translate, "translation_cache", cache),
+                patch.object(translate, "CACHE_ENABLED", True),
+                patch.object(
+                    translate, "_chat_with_tokens", return_value="{}"
+                ) as chat,
+            ):
+                self.assertEqual(translate.scan_terms(["Hello"]), {})
+                self.assertEqual(translate.scan_terms(["Hello"]), {})
+
+            chat.assert_called_once()
+
+    def test_poisoned_scan_rows_are_misses_and_overwritten(self):
+        for poisoned in (["not", "a", "dict"], {" Term ": " Value "}):
+            with (
+                self.subTest(poisoned=poisoned),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+                cache.set_step("scan-key", "scan", poisoned)
+                with (
+                    patch.object(translate, "translation_cache", cache),
+                    patch.object(translate, "CACHE_ENABLED", True),
+                    patch.object(
+                        translate, "_step_cache_identity", return_value="scan-key"
+                    ),
+                    patch.object(
+                        translate,
+                        "_chat_with_tokens",
+                        return_value='{"Hello": "Halo"}',
+                    ) as chat,
+                ):
+                    expected = {"Hello": "Halo"}
+                    self.assertEqual(translate.scan_terms(["Hello"]), expected)
+                    self.assertEqual(translate.scan_terms(["Hello"]), expected)
+
+                chat.assert_called_once()
+                self.assertEqual(cache.get_step("scan-key"), {"Hello": "Halo"})
+
+    def test_disabled_step_cache_bypasses_reads_and_writes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+            cache.set_step("scan-key", "scan", {"Old": "Lama"})
+            with (
+                patch.object(translate, "translation_cache", cache),
+                patch.object(translate, "CACHE_ENABLED", False),
+                patch.object(
+                    translate, "_step_cache_identity", return_value="scan-key"
+                ),
+                patch.object(
+                    translate,
+                    "_chat_with_tokens",
+                    return_value='{"New": "Baru"}',
+                ) as chat,
+            ):
+                self.assertEqual(translate.scan_terms(["Hello"]), {"New": "Baru"})
+                self.assertEqual(translate.scan_terms(["Hello"]), {"New": "Baru"})
+
+            self.assertEqual(chat.call_count, 2)
+            self.assertEqual(cache.get_step("scan-key"), {"Old": "Lama"})
+
+    def test_cached_scan_preserves_first_writer_glossary_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+            with (
+                patch.object(translate, "translation_cache", cache),
+                patch.object(translate, "CACHE_ENABLED", True),
+                patch.object(
+                    translate,
+                    "_chat_with_tokens",
+                    return_value='{"term": "first", "TERM": "second"}',
+                ) as chat,
+            ):
+                first = translate.build_glossary([["Hello"]])
+                second = translate.build_glossary([["Hello"]])
+
+            self.assertEqual(first, {"term": "first"})
+            self.assertEqual(second, first)
+            chat.assert_called_once()
+
     def test_invalid_scan_is_not_cached(self):
         with tempfile.TemporaryDirectory() as directory:
             cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
@@ -203,6 +288,63 @@ class SQLiteTranslationCacheTests(unittest.TestCase):
             self.assertEqual(second, first)
             chat.assert_called_once()
 
+    def test_poisoned_single_rows_are_misses_and_overwritten(self):
+        for poisoned in ("not a list", [], ["one", "two"], [1]):
+            with (
+                self.subTest(poisoned=poisoned),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+                cache.set_step("single-key", "single", poisoned)
+                with (
+                    patch.object(translate, "translation_cache", cache),
+                    patch.object(translate, "CACHE_ENABLED", True),
+                    patch.object(
+                        translate, "_step_cache_identity", return_value="single-key"
+                    ),
+                    patch.object(translate, "_chat", return_value="Halo") as chat,
+                ):
+                    self.assertEqual(translate.translate_single("Hello"), "Halo")
+                    self.assertEqual(translate.translate_single("Hello"), "Halo")
+
+                chat.assert_called_once()
+                self.assertEqual(cache.get_step("single-key"), ["Halo"])
+
+    def test_poisoned_chunk_rows_are_misses_and_overwritten(self):
+        poisoned_rows = (
+            "not a list",
+            ["only one"],
+            ["one", 2],
+            ["one", "two", "three"],
+        )
+        for poisoned in poisoned_rows:
+            with (
+                self.subTest(poisoned=poisoned),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+                cache.set_step("chunk-key", "chunk", poisoned)
+                with (
+                    patch.object(translate, "translation_cache", cache),
+                    patch.object(translate, "CACHE_ENABLED", True),
+                    patch.object(
+                        translate, "_step_cache_identity", return_value="chunk-key"
+                    ),
+                    patch.object(
+                        translate, "_chat", return_value="1. Halo\n2. Dunia"
+                    ) as chat,
+                ):
+                    expected = ["Halo", "Dunia"]
+                    self.assertEqual(
+                        translate.translate_chunk(["Hello", "World"]), expected
+                    )
+                    self.assertEqual(
+                        translate.translate_chunk(["Hello", "World"]), expected
+                    )
+
+                chat.assert_called_once()
+                self.assertEqual(cache.get_step("chunk-key"), expected)
+
     def test_translation_key_includes_glossary(self):
         with tempfile.TemporaryDirectory() as directory:
             cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
@@ -219,6 +361,60 @@ class SQLiteTranslationCacheTests(unittest.TestCase):
                 translate.translate_chunk(["Apple", "Pie"], {"Apple": "Apple"})
 
             self.assertEqual(chat.call_count, 2)
+
+    def test_equivalent_glossary_orders_reuse_translation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+            with (
+                patch.object(translate, "translation_cache", cache),
+                patch.object(translate, "CACHE_ENABLED", True),
+                patch.object(
+                    translate, "_chat", return_value="1. Halo\n2. Dunia"
+                ) as chat,
+            ):
+                first = translate.translate_chunk(
+                    ["Hello", "World"], {"World": "Dunia", "Hello": "Halo"}
+                )
+                second = translate.translate_chunk(
+                    ["Hello", "World"], {"Hello": "Halo", "World": "Dunia"}
+                )
+
+            self.assertEqual(second, first)
+            chat.assert_called_once()
+
+    def test_step_cache_hit_logs_kind_and_key_without_subtitle_content(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+            cache.set_step("scan-key-123456", "scan", {"Term": "Istilah"})
+            cache.set_step(
+                "chunk-key-123456", "chunk", ["Terjemahan 1", "Terjemahan 2"]
+            )
+
+            def identity(step, _payload):
+                return f"{step}-key-123456"
+
+            output = io.StringIO()
+            with (
+                patch.object(translate, "translation_cache", cache),
+                patch.object(translate, "CACHE_ENABLED", True),
+                patch.object(
+                    translate, "_step_cache_identity", side_effect=identity
+                ),
+                patch.object(translate, "_chat", side_effect=AssertionError),
+                patch.object(
+                    translate, "_chat_with_tokens", side_effect=AssertionError
+                ),
+                redirect_stdout(output),
+            ):
+                translate.scan_terms(["SECRET SCAN CUE"])
+                translate.translate_chunk(
+                    ["SECRET CHUNK CUE 1", "SECRET CHUNK CUE 2"]
+                )
+
+            log = output.getvalue()
+            self.assertIn("Scan cache hit: scan-key-123", log)
+            self.assertIn("Translation cache hit: chunk-key-12", log)
+            self.assertNotIn("SECRET", log)
 
     def test_successful_chunk_survives_later_failure(self):
         with tempfile.TemporaryDirectory() as directory:

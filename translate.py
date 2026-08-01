@@ -374,12 +374,12 @@ def translate_single(sentence, glossary=None):
     cache_key = _step_cache_identity(
         "single", {"request": user, "glossary": glossary or {}}
     )
-    cached = _get_cached_step(cache_key)
+    cached = _get_cached_translation_step(cache_key, 1)
     if cached is not None:
         return cached[0]
 
     with translation_key_lock(cache_key):
-        cached = _get_cached_step(cache_key)
+        cached = _get_cached_translation_step(cache_key, 1)
         if cached is not None:
             return cached[0]
 
@@ -406,12 +406,12 @@ def scan_terms(chunk):
         "subtitle Inggris berikut:\n\n" + numbered
     )
     cache_key = _step_cache_identity("scan", {"request": user})
-    cached = _get_cached_step(cache_key)
+    cached = _get_cached_scan(cache_key)
     if cached is not None:
         return cached
 
     with translation_key_lock(cache_key):
-        cached = _get_cached_step(cache_key)
+        cached = _get_cached_scan(cache_key)
         if cached is not None:
             return cached
 
@@ -493,7 +493,7 @@ def translate_chunk(chunk, glossary=None):
     numbered = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(chunk))
     glossary_block = ""
     if glossary:
-        lines = [f'- "{en}" -> "{id_}"' for en, id_ in glossary.items()]
+        lines = [f'- "{en}" -> "{id_}"' for en, id_ in sorted(glossary.items())]
         glossary_block = (
             "ISTILAH TETAP (WAJIB konsisten di seluruh subtitle ini):\n"
             + "\n".join(lines)
@@ -513,12 +513,12 @@ def translate_chunk(chunk, glossary=None):
     cache_key = _step_cache_identity(
         "chunk", {"request": user, "glossary": glossary or {}}
     )
-    cached = _get_cached_step(cache_key)
+    cached = _get_cached_translation_step(cache_key, n)
     if cached is not None:
         return cached
 
     with translation_key_lock(cache_key):
-        cached = _get_cached_step(cache_key)
+        cached = _get_cached_translation_step(cache_key, n)
         if cached is not None:
             return cached
 
@@ -676,6 +676,34 @@ def _get_cached_step(cache_key):
     except Exception as exc:
         print(f"LLM step cache read failed: {exc}")
         return None
+
+
+def _get_cached_scan(cache_key):
+    cached = _get_cached_step(cache_key)
+    if not isinstance(cached, dict) or not all(
+        isinstance(key, str)
+        and isinstance(value, str)
+        and key
+        and value
+        and key == key.strip()
+        and value == value.strip()
+        for key, value in cached.items()
+    ):
+        return None
+    print(f"Scan cache hit: {cache_key[:12]}")
+    return cached
+
+
+def _get_cached_translation_step(cache_key, expected_count):
+    cached = _get_cached_step(cache_key)
+    if not (
+        isinstance(cached, list)
+        and len(cached) == expected_count
+        and all(isinstance(value, str) for value in cached)
+    ):
+        return None
+    print(f"Translation cache hit: {cache_key[:12]}")
+    return cached
 
 
 def _set_cached_step(cache_key, step, result):
