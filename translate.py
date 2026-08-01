@@ -366,12 +366,26 @@ def _chat_with_tokens(user_content, system_prompt, max_tokens):
 
 def translate_single(sentence, glossary=None):
     """Fallback: terjemahkan satu kalimat saja (dipakai jika batch gagal align)."""
-    out = _chat(
+    user = (
         "Terjemahkan kalimat subtitle Inggris berikut ke bahasa Indonesia. "
         "Keluarkan HANYA terjemahannya, tanpa label atau penjelasan:\n\n"
         + sentence
     )
-    return postprocess(out, glossary)
+    cache_key = _step_cache_identity(
+        "single", {"request": user, "glossary": glossary or {}}
+    )
+    cached = _get_cached_step(cache_key)
+    if cached is not None:
+        return cached[0]
+
+    with translation_key_lock(cache_key):
+        cached = _get_cached_step(cache_key)
+        if cached is not None:
+            return cached[0]
+
+        translated = postprocess(_chat(user), glossary)
+        _set_cached_step(cache_key, "single", [translated])
+        return translated
 
 
 def scan_terms(chunk):
@@ -496,21 +510,39 @@ def translate_chunk(chunk, glossary=None):
         + glossary_block
         + numbered
     )
-    text = _chat(user)
+    cache_key = _step_cache_identity(
+        "chunk", {"request": user, "glossary": glossary or {}}
+    )
+    cached = _get_cached_step(cache_key)
+    if cached is not None:
+        return cached
 
-    parsed = {}
-    for line in text.splitlines():
-        m = _NUMBERED.match(line)
-        if m:
-            parsed[int(m.group(1))] = m.group(2).strip()
+    with translation_key_lock(cache_key):
+        cached = _get_cached_step(cache_key)
+        if cached is not None:
+            return cached
 
-    results = [parsed.get(i + 1) for i in range(n)]
-    if any(r is None or r == "" for r in results):
-        # Penomoran tidak utuh -> belah dua dan coba ulang tiap separuh.
-        mid = n // 2
-        print(f"  chunk align gagal (n={n}), pecah jadi {mid}+{n - mid}")
-        return translate_chunk(chunk[:mid], glossary) + translate_chunk(chunk[mid:], glossary)
-    return [postprocess(r, glossary) for r in results]
+        text = _chat(user)
+
+        parsed = {}
+        for line in text.splitlines():
+            m = _NUMBERED.match(line)
+            if m:
+                parsed[int(m.group(1))] = m.group(2).strip()
+
+        results = [parsed.get(i + 1) for i in range(n)]
+        if any(r is None or r == "" for r in results):
+            # Penomoran tidak utuh -> belah dua dan coba ulang tiap separuh.
+            mid = n // 2
+            print(f"  chunk align gagal (n={n}), pecah jadi {mid}+{n - mid}")
+            return (
+                translate_chunk(chunk[:mid], glossary)
+                + translate_chunk(chunk[mid:], glossary)
+            )
+
+        translated = [postprocess(r, glossary) for r in results]
+        _set_cached_step(cache_key, "chunk", translated)
+        return translated
 
 
 def _build_usage_summary():

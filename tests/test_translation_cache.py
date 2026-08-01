@@ -171,6 +171,114 @@ class SQLiteTranslationCacheTests(unittest.TestCase):
             self.assertEqual(results, [{"Hello": "Halo"}] * 4)
             chat.assert_called_once()
 
+    def test_translate_chunk_reuses_validated_result(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+            with (
+                patch.object(translate, "translation_cache", cache),
+                patch.object(translate, "CACHE_ENABLED", True),
+                patch.object(
+                    translate, "_chat", return_value="1. Halo\n2. Dunia"
+                ) as chat,
+            ):
+                first = translate.translate_chunk(["Hello", "World"], {})
+                second = translate.translate_chunk(["Hello", "World"], {})
+
+            self.assertEqual(first, ["Halo", "Dunia"])
+            self.assertEqual(second, first)
+            chat.assert_called_once()
+
+    def test_translate_single_reuses_postprocessed_result(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+            with (
+                patch.object(translate, "translation_cache", cache),
+                patch.object(translate, "CACHE_ENABLED", True),
+                patch.object(translate, "_chat", return_value=' "Halo" ') as chat,
+            ):
+                first = translate.translate_single("Hello", {})
+                second = translate.translate_single("Hello", {})
+
+            self.assertEqual(first, "Halo")
+            self.assertEqual(second, first)
+            chat.assert_called_once()
+
+    def test_translation_key_includes_glossary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+            with (
+                patch.object(translate, "translation_cache", cache),
+                patch.object(translate, "CACHE_ENABLED", True),
+                patch.object(
+                    translate,
+                    "_chat",
+                    side_effect=["1. Apel\n2. Pai", "1. Apple\n2. Pie"],
+                ) as chat,
+            ):
+                translate.translate_chunk(["Apple", "Pie"], {"Apple": "Apel"})
+                translate.translate_chunk(["Apple", "Pie"], {"Apple": "Apple"})
+
+            self.assertEqual(chat.call_count, 2)
+
+    def test_successful_chunk_survives_later_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+            with (
+                patch.object(translate, "translation_cache", cache),
+                patch.object(translate, "CACHE_ENABLED", True),
+            ):
+                with patch.object(
+                    translate,
+                    "_chat",
+                    side_effect=["1. Satu\n2. Dua", RuntimeError("LLM down")],
+                ):
+                    self.assertEqual(
+                        translate.translate_chunk(["One", "Two"], {}),
+                        ["Satu", "Dua"],
+                    )
+                    with self.assertRaisesRegex(RuntimeError, "LLM down"):
+                        translate.translate_chunk(["Three", "Four"], {})
+
+                with patch.object(
+                    translate, "_chat", return_value="1. Tiga\n2. Empat"
+                ) as resumed:
+                    self.assertEqual(
+                        translate.translate_chunk(["One", "Two"], {}),
+                        ["Satu", "Dua"],
+                    )
+                    self.assertEqual(
+                        translate.translate_chunk(["Three", "Four"], {}),
+                        ["Tiga", "Empat"],
+                    )
+                    resumed.assert_called_once()
+
+    def test_misaligned_parent_is_not_cached(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+            with (
+                patch.object(translate, "translation_cache", cache),
+                patch.object(translate, "CACHE_ENABLED", True),
+            ):
+                with patch.object(
+                    translate,
+                    "_chat",
+                    side_effect=["invalid", "Satu", "Dua"],
+                ) as first_run:
+                    self.assertEqual(
+                        translate.translate_chunk(["One", "Two"], {}),
+                        ["Satu", "Dua"],
+                    )
+                    self.assertEqual(first_run.call_count, 3)
+
+                with patch.object(
+                    translate, "_chat", return_value="1. Satu\n2. Dua"
+                ) as second_run:
+                    self.assertEqual(
+                        translate.translate_chunk(["One", "Two"], {}),
+                        ["Satu", "Dua"],
+                    )
+                    second_run.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()
