@@ -391,37 +391,51 @@ def scan_terms(chunk):
         f"Identifikasi istilah yang harus konsisten dari {len(chunk)} baris "
         "subtitle Inggris berikut:\n\n" + numbered
     )
-    text = _chat_with_tokens(user, SCAN_SYSTEM_PROMPT, MAX_TOKENS_SCAN)
+    cache_key = _step_cache_identity("scan", {"request": user})
+    cached = _get_cached_step(cache_key)
+    if cached is not None:
+        return cached
 
-    # Adaptive retry: content kosong / no-JSON biasanya artinya reasoning
-    # makan semua MAX_TOKENS_SCAN. Retry dengan budget lebih besar.
-    if not text or "{" not in text:
-        print(f"  scan: empty response, retrying with "
-              f"{MAX_TOKENS_SCAN_RETRY} tokens")
-        text = _chat_with_tokens(user, SCAN_SYSTEM_PROMPT, MAX_TOKENS_SCAN_RETRY)
+    with translation_key_lock(cache_key):
+        cached = _get_cached_step(cache_key)
+        if cached is not None:
+            return cached
 
-    if not text:
-        print(f"  scan: still empty after retry (chunk size {len(chunk)})")
-        return {}
+        text = _chat_with_tokens(user, SCAN_SYSTEM_PROMPT, MAX_TOKENS_SCAN)
 
-    # Cari JSON object di output. Model kadang membungkus dengan
-    # ```json ... ``` atau teks preamble.
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if not match:
-        print(f"  scan: no JSON in response (chunk size {len(chunk)}): {text!r}")
-        return {}
-    try:
-        data = json.loads(match.group())
-    except json.JSONDecodeError as exc:
-        print(f"  scan: JSON parse error ({exc}): {text!r}")
-        return {}
+        # Adaptive retry: content kosong / no-JSON biasanya artinya reasoning
+        # makan semua MAX_TOKENS_SCAN. Retry dengan budget lebih besar.
+        if not text or "{" not in text:
+            print(f"  scan: empty response, retrying with "
+                  f"{MAX_TOKENS_SCAN_RETRY} tokens")
+            text = _chat_with_tokens(user, SCAN_SYSTEM_PROMPT, MAX_TOKENS_SCAN_RETRY)
 
-    # Sanitasi: hanya str -> str, key non-empty, value non-empty.
-    cleaned = {}
-    for k, v in data.items():
-        if isinstance(k, str) and isinstance(v, str) and k.strip() and v.strip():
-            cleaned[k.strip()] = v.strip()
-    return cleaned
+        if not text:
+            print(f"  scan: still empty after retry (chunk size {len(chunk)})")
+            return {}
+
+        # Cari JSON object di output. Model kadang membungkus dengan
+        # ```json ... ``` atau teks preamble.
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not match:
+            print(f"  scan: no JSON in response (chunk size {len(chunk)}): {text!r}")
+            return {}
+        try:
+            data = json.loads(match.group())
+        except json.JSONDecodeError as exc:
+            print(f"  scan: JSON parse error ({exc}): {text!r}")
+            return {}
+        if not isinstance(data, dict):
+            print(f"  scan: JSON is not an object (chunk size {len(chunk)})")
+            return {}
+
+        # Sanitasi: hanya str -> str, key non-empty, value non-empty.
+        cleaned = {}
+        for k, v in data.items():
+            if isinstance(k, str) and isinstance(v, str) and k.strip() and v.strip():
+                cleaned[k.strip()] = v.strip()
+        _set_cached_step(cache_key, "scan", cleaned)
+        return cleaned
 
 
 def build_glossary(chunks):
@@ -592,6 +606,53 @@ def _set_cached_translation(cache_key, source_sha256, translated_srt):
         )
     except Exception as exc:
         print(f"Translation cache write failed: {exc}")
+
+
+def _step_cache_identity(step, payload):
+    identity = {
+        "version": CACHE_VERSION,
+        "step": step,
+        "base_url": BASE_URL,
+        "model": MODEL,
+        "temperature": TEMPERATURE,
+        "disable_thinking": DISABLE_THINKING,
+        "system_prompt": (
+            SCAN_SYSTEM_PROMPT if step == "scan" else SYSTEM_PROMPT
+        ),
+        "max_tokens": (
+            [MAX_TOKENS_SCAN, MAX_TOKENS_SCAN_RETRY]
+            if step == "scan"
+            else MAX_TOKENS
+        ),
+        "replacements": replacements if step != "scan" else None,
+        "payload": payload,
+    }
+    encoded = json.dumps(
+        identity,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _get_cached_step(cache_key):
+    if not CACHE_ENABLED:
+        return None
+    try:
+        return translation_cache.get_step(cache_key)
+    except Exception as exc:
+        print(f"LLM step cache read failed: {exc}")
+        return None
+
+
+def _set_cached_step(cache_key, step, result):
+    if not CACHE_ENABLED:
+        return
+    try:
+        translation_cache.set_step(cache_key, step, result)
+    except Exception as exc:
+        print(f"LLM step cache write failed: {exc}")
 
 
 def translate_srt(srt_content):

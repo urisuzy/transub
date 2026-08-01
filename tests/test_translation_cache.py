@@ -93,6 +93,84 @@ class SQLiteTranslationCacheTests(unittest.TestCase):
 
         self.assertNotEqual(first, second)
 
+    def test_scan_terms_reuses_validated_result(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+            with (
+                patch.object(translate, "translation_cache", cache),
+                patch.object(translate, "CACHE_ENABLED", True),
+                patch.object(
+                    translate,
+                    "_chat_with_tokens",
+                    return_value='{"New York": "New York"}',
+                ) as chat,
+            ):
+                first = translate.scan_terms(["Welcome to New York."])
+                second = translate.scan_terms(["Welcome to New York."])
+
+            self.assertEqual(first, {"New York": "New York"})
+            self.assertEqual(second, first)
+            chat.assert_called_once()
+
+    def test_invalid_scan_is_not_cached(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+            with (
+                patch.object(translate, "translation_cache", cache),
+                patch.object(translate, "CACHE_ENABLED", True),
+                patch.object(
+                    translate,
+                    "_chat_with_tokens",
+                    side_effect=["not json", "still not json"] * 2,
+                ) as chat,
+            ):
+                self.assertEqual(translate.scan_terms(["Hello"]), {})
+                self.assertEqual(translate.scan_terms(["Hello"]), {})
+
+            self.assertEqual(chat.call_count, 4)
+
+    def test_step_identity_changes_with_variant_and_payload(self):
+        scan = translate._step_cache_identity("scan", {"chunk": ["Hello"]})
+        changed = translate._step_cache_identity("scan", {"chunk": ["Hi"]})
+        single = translate._step_cache_identity("single", {"chunk": ["Hello"]})
+
+        with patch.object(translate, "CACHE_VERSION", "next"):
+            next_version = translate._step_cache_identity(
+                "scan", {"chunk": ["Hello"]}
+            )
+
+        self.assertNotEqual(scan, changed)
+        self.assertNotEqual(scan, single)
+        self.assertNotEqual(scan, next_version)
+
+    def test_concurrent_identical_scans_call_llm_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+            barrier = threading.Barrier(4)
+            results = []
+
+            def worker():
+                barrier.wait()
+                results.append(translate.scan_terms(["Hello"]))
+
+            with (
+                patch.object(translate, "translation_cache", cache),
+                patch.object(translate, "CACHE_ENABLED", True),
+                patch.object(
+                    translate,
+                    "_chat_with_tokens",
+                    return_value='{"Hello": "Halo"}',
+                ) as chat,
+            ):
+                threads = [threading.Thread(target=worker) for _ in range(4)]
+                for thread in threads:
+                    thread.start()
+                for thread in threads:
+                    thread.join()
+
+            self.assertEqual(results, [{"Hello": "Halo"}] * 4)
+            chat.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()
