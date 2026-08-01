@@ -10,6 +10,20 @@ from translation_cache import SQLiteTranslationCache, translation_key_lock
 
 
 class SQLiteTranslationCacheTests(unittest.TestCase):
+    def test_step_round_trip_and_overwrite(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
+
+            self.assertIsNone(cache.get_step("missing"))
+            cache.set_step("scan-key", "scan", {"New York": "New York"})
+            self.assertEqual(
+                cache.get_step("scan-key"),
+                {"New York": "New York"},
+            )
+
+            cache.set_step("scan-key", "scan", ["hasil terbaru"])
+            self.assertEqual(cache.get_step("scan-key"), ["hasil terbaru"])
+
     def test_round_trip_and_overwrite(self):
         with tempfile.TemporaryDirectory() as directory:
             cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")

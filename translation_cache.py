@@ -1,3 +1,4 @@
+import json
 import sqlite3
 import threading
 from contextlib import contextmanager
@@ -41,6 +42,16 @@ class SQLiteTranslationCache:
                     )
                     """
                 )
+                connection.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS llm_steps (
+                        cache_key TEXT PRIMARY KEY,
+                        step TEXT NOT NULL,
+                        result_json TEXT NOT NULL,
+                        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
             self._initialized = True
 
     def get(self, cache_key):
@@ -70,6 +81,31 @@ class SQLiteTranslationCache:
                     created_at = CURRENT_TIMESTAMP
                 """,
                 (cache_key, source_sha256, model, translated_srt),
+            )
+
+    def get_step(self, cache_key):
+        self._initialize()
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT result_json FROM llm_steps WHERE cache_key = ?",
+                (cache_key,),
+            ).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def set_step(self, cache_key, step, result):
+        self._initialize()
+        result_json = json.dumps(result, ensure_ascii=False, sort_keys=True)
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO llm_steps (cache_key, step, result_json)
+                VALUES (?, ?, ?)
+                ON CONFLICT(cache_key) DO UPDATE SET
+                    step = excluded.step,
+                    result_json = excluded.result_json,
+                    created_at = CURRENT_TIMESTAMP
+                """,
+                (cache_key, step, result_json),
             )
 
 
