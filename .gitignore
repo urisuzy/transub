@@ -5,3 +5,4 @@ test/sub_translated_*.srt
 /data/
 # Added by code-review-graph
 .code-review-graph/
+.worktrees/
