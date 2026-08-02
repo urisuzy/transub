@@ -92,5 +92,51 @@ class AssParserTests(unittest.TestCase):
         )
 
 
+from unittest.mock import patch
+
+import translate_ass
+
+
+class AssPipelineTests(unittest.TestCase):
+    def test_pipeline_translates_dialogue_and_sign_but_preserves_effects(self):
+        with patch.object(
+            translate_ass,
+            "translate_sentences",
+            return_value=["Halo dunia lagi", "KHUSUS PETUGAS"],
+        ) as translate_sentences:
+            result = translate_ass.translate_ass_uncached(ASS_SAMPLE)
+
+        output = result["srt"]
+        self.assertTrue(output.startswith("﻿[Script Info]\r\n"))
+        self.assertIn("Style: main,Arial\r\n", output)
+        self.assertIn("Comment: 0,0:00:00.00,0:00:01.00,main,,0,0,0,,Do not translate\r\n", output)
+        self.assertIn(
+            "Dialogue: 0,0:00:01.00,0:00:02.00,main,A,0,0,0,,",
+            output,
+        )
+        self.assertIn(r"{\p1}m 0 0 l 10 10{\p0}", output)
+        self.assertIn(r"{\an8}", output)
+        self.assertIn(r"\N", output)
+        self.assertIn(r"{\b0}", output)
+        self.assertIn("KHUSUS PETUGAS", output)
+        self.assertEqual(output.count("Dialogue:"), 3)
+        self.assertEqual(output.count("\r\n"), ASS_SAMPLE.count("\r\n"))
+        translate_sentences.assert_called_once_with(
+            ["Hello, world again", "AUTHORIZED ONLY"]
+        )
+
+    def test_pipeline_with_no_safe_dialogue_returns_original(self):
+        drawing_only = (
+            "[Script Info]\n[Events]\n"
+            "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+            "Dialogue: 0,0:00:00.00,0:00:01.00,main,,0,0,0,,{\\p1}m 0 0 l 1 1{\\p0}\n"
+        )
+        with patch.object(translate_ass, "translate_sentences") as translate_sentences:
+            result = translate_ass.translate_ass_uncached(drawing_only)
+
+        self.assertEqual(result["srt"], drawing_only)
+        translate_sentences.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

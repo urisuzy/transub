@@ -1,6 +1,13 @@
 import re
 from dataclasses import dataclass
 
+from translate import (
+    _build_usage_summary,
+    _print_usage_summary,
+    _reset_usage,
+    translate_sentences,
+)
+
 _CONTROL_RE = re.compile(r"(\{[^}]*\}|\\[Nnh])")
 _DRAWING_RE = re.compile(r"\\p[1-9]\d*")
 
@@ -149,3 +156,36 @@ def rebuild_ass_text(dialogue, translated):
     for control, segment in zip(dialogue.controls, visible[1:]):
         rebuilt.extend((control, segment))
     return "".join(rebuilt)
+
+
+def translate_ass_uncached(content):
+    _reset_usage()
+    lines, dialogues = parse_ass(content)
+    if not dialogues:
+        _print_usage_summary()
+        return {
+            "srt": content,
+            "token_usage": _build_usage_summary(),
+        }
+
+    translated = translate_sentences(
+        [dialogue.source_text for dialogue in dialogues]
+    )
+    if len(translated) != len(dialogues):
+        raise ValueError(
+            f"ASS translation count mismatch: "
+            f"{len(translated)} != {len(dialogues)}"
+        )
+
+    for dialogue, text in zip(dialogues, translated):
+        lines[dialogue.line_index] = (
+            dialogue.prefix
+            + rebuild_ass_text(dialogue, text)
+            + dialogue.ending
+        )
+
+    _print_usage_summary()
+    return {
+        "srt": "".join(lines),
+        "token_usage": _build_usage_summary(),
+    }
