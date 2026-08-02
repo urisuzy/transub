@@ -5,7 +5,6 @@ import os
 import re
 from concurrent.futures import ThreadPoolExecutor
 
-import srt
 from openai import OpenAI
 from translation_cache import SQLiteTranslationCache, translation_key_lock
 
@@ -51,6 +50,9 @@ CACHE_PATH = os.environ.get(
 # perubahan pipeline yang tidak tercakup oleh fingerprint otomatis.
 CACHE_VERSION = os.environ.get("TRANSLATION_CACHE_VERSION", "1")
 
+SRT_HANDLER_VERSION = "1"
+ASS_HANDLER_VERSION = "1"
+
 client = OpenAI(base_url=BASE_URL, api_key=API_KEY or "EMPTY")
 translation_cache = SQLiteTranslationCache(CACHE_PATH)
 
@@ -84,26 +86,6 @@ def _record_usage(phase, resp):
     if prompt_details is not None:
         bucket["cached"] += getattr(prompt_details, "cached_tokens", 0) or 0
 
-
-def _print_usage_summary():
-    """Cetak ringkasan token usage per phase + total."""
-    total = {"calls": 0, "prompt": 0, "completion": 0,
-             "reasoning": 0, "cached": 0}
-    print("\n=== TOKEN USAGE ===")
-    for phase, b in _TOKEN_USAGE.items():
-        if b["calls"] == 0:
-            continue
-        print(f"  {phase:9s}: {b['calls']:3d} calls | "
-              f"prompt={b['prompt']:>7,} | "
-              f"completion={b['completion']:>7,} "
-              f"(reasoning={b['reasoning']:>6,}, cached={b['cached']:>6,})")
-        for k in total:
-            total[k] += b[k]
-    if total["calls"] > 0:
-        print(f"  {'TOTAL':9s}: {total['calls']:3d} calls | "
-              f"prompt={total['prompt']:>7,} | "
-              f"completion={total['completion']:>7,} "
-              f"(reasoning={total['reasoning']:>6,}, cached={total['cached']:>6,})")
 
 SYSTEM_PROMPT = (
     "Kamu penerjemah subtitle film profesional dari bahasa Inggris ke bahasa "
@@ -160,141 +142,8 @@ replacements = [
     # ("Anda", "Kau"),
 ]
 
-# Akhir kalimat: tanda baca + opsional kutip/kurung penutup di ujung teks.
-_SENTENCE_END = re.compile(r"""[.!?…]['"”’\)\]]*\s*$""")
 # Baris bernomor pada output model: "12. teks" / "12) teks" / "12: teks".
 _NUMBERED = re.compile(r"^\s*(\d+)\s*[.):\-]\s*(.*)$")
-
-
-def remove_empty_subtitles(subtitles):
-    """Menghapus subtitle yang kontennya kosong."""
-    return [sub for sub in subtitles if sub.content.strip()]
-
-
-def remove_hearing_impaired(subtitles):
-    """Menghapus teks hearing-impaired, mis. (suara pintu) atau [MUSIK]."""
-    for sub in subtitles:
-        sub.content = re.sub(r"\([^)]*\)", "", sub.content)
-        sub.content = re.sub(r"\[[^\]]*\]", "", sub.content)
-    return subtitles
-
-
-def normalize_cue_text(text):
-    """Ratakan baris dalam satu cue jadi satu spasi (subtitle sering 2 baris)."""
-    return re.sub(r"\s+", " ", text.replace("\n", " ")).strip()
-
-
-def group_into_sentences(subtitles):
-    """Kelompokkan cue berurutan menjadi kalimat utuh.
-
-    Subtitle sering memecah satu kalimat ke beberapa cue. Kita gabungkan cue
-    sampai bertemu tanda akhir kalimat, sehingga model menerjemahkan kalimat
-    lengkap (jauh lebih natural), lalu hasilnya dipecah lagi ke cue aslinya.
-
-    Mengembalikan list of list[Subtitle].
-    """
-    groups = []
-    current = []
-    for sub in subtitles:
-        current.append(sub)
-        if _SENTENCE_END.search(normalize_cue_text(sub.content)):
-            groups.append(current)
-            current = []
-    if current:
-        groups.append(current)
-    return groups
-
-
-def distribute_translation(translated, group):
-    """Pecah terjemahan kembali ke cue asli dengan pendekatan multi-tier.
-
-    Tier 1: Cocokkan tanda baca akhir cue sumber dengan teks terjemahan.
-    Tier 2: Gagal total — proporsi karakter + jangkar tanda baca.
-    Tier 3: Gagal juga — potong di spasi (word boundary).
-
-    Karena subtitle selalu dipotong di tanda baca, Tier 1 menangani >95% kasus
-    dengan akurasi tinggi. Tier 2-3 adalah fallback untuk kasus di mana struktur
-    tanda baca berubah drastis antara EN dan ID.
-    """
-    if len(group) == 1:
-        return [translated.strip()]
-
-    tgt = translated.strip()
-    n = len(tgt)
-    src_texts = [normalize_cue_text(s.content) for s in group]
-
-    # Temukan posisi potong untuk setiap batas antar-cue.
-    cuts = []
-    prev = 0
-
-    for k in range(len(group) - 1):
-        cut = _find_cut(src_texts, k, tgt, prev)
-        # Jamin tidak mundur dan sisakan minimal 1 karakter untuk cue tersisa.
-        cut = max(cut, prev + 1)
-        cut = min(cut, n - (len(group) - k - 1))
-        cuts.append(cut)
-        prev = cut
-
-    # Bangun hasil.
-    chunks = []
-    prev = 0
-    for cut in cuts:
-        chunks.append(tgt[prev:cut].strip())
-        prev = cut
-    chunks.append(tgt[prev:].strip())
-    return chunks
-
-
-def _find_cut(src_texts, cue_idx, tgt, prev):
-    """Cari posisi potong optimal antara cue[cue_idx] dan cue[cue_idx+1]."""
-    n = len(tgt)
-
-    # --- Tier 1: Cocokkan trailing punctuation dari source cue di target ---
-    src = src_texts[cue_idx]
-    trail = re.search(r"[.!?…,;:\-—]+$", src)
-    if trail:
-        trail_text = trail.group()
-        # Cari di tgt mulai dari prev + 1.
-        pos = tgt.find(trail_text, prev + 1)
-        if pos != -1:
-            cut = pos + len(trail_text)
-            while cut < n and tgt[cut] == " ":
-                cut += 1
-            if cut > prev and cut < n:
-                return cut
-
-    # --- Tier 2: Character ratio + punctuation anchor ---
-    src_chars = [max(1, len(s)) for s in src_texts]
-    total_src = sum(src_chars)
-    target = round(n * sum(src_chars[:cue_idx + 1]) / total_src)
-    window = max(8, round(n * 0.25))
-    lo = max(prev + 1, target - window)
-    hi = min(n - (len(src_texts) - cue_idx - 1), target + window)
-
-    # Semua posisi anchor (setelah tanda baca) dalam tgt.
-    anchors = []
-    for m in re.finditer(r"[.,!?;:…—\-]", tgt):
-        pos = m.end()
-        while pos < n and tgt[pos] == " ":
-            pos += 1
-        anchors.append(pos)
-
-    candidates = [ap for ap in anchors if lo <= ap <= hi]
-    if candidates:
-        return min(candidates, key=lambda x: abs(x - target))
-
-    # --- Tier 3: Spasi terdekat ---
-    left = tgt.rfind(" ", lo, target)
-    right = tgt.find(" ", target, hi)
-    space_candidates = []
-    if left != -1:
-        space_candidates.append((abs(left - target), left + 1))
-    if right != -1:
-        space_candidates.append((abs(right - target), right + 1))
-    if space_candidates:
-        return min(space_candidates, key=lambda x: x[0])[1]
-
-    return target
 
 
 def postprocess(text, glossary=None):
@@ -590,11 +439,17 @@ def _print_usage_summary():
               f"(reasoning={b['reasoning']:>6,}, cached={b['cached']:>6,})")
 
 
-def _translation_cache_identity(srt_content):
+def _translation_cache_identity(
+    content,
+    subtitle_format="srt",
+    handler_version=SRT_HANDLER_VERSION,
+):
     """Bangun cache key dari sumber dan semua input yang memengaruhi hasil."""
-    source_sha256 = hashlib.sha256(srt_content.encode("utf-8")).hexdigest()
+    source_sha256 = hashlib.sha256(content.encode("utf-8")).hexdigest()
     fingerprint = {
         "version": CACHE_VERSION,
+        "subtitle_format": subtitle_format,
+        "handler_version": handler_version,
         "base_url": BASE_URL,
         "model": MODEL,
         "chunk_size": CHUNK_SIZE,
@@ -715,113 +570,89 @@ def _set_cached_step(cache_key, step, result):
         print(f"LLM step cache write failed: {exc}")
 
 
-def translate_srt(srt_content):
-    """Terjemahkan SRT, atau ambil hasil identik dari cache SQLite."""
+def _reset_usage():
+    for phase in _TOKEN_USAGE:
+        for key in _TOKEN_USAGE[phase]:
+            _TOKEN_USAGE[phase][key] = 0
+
+
+def translate_sentences(sentences):
+    if not sentences:
+        return []
+
+    chunks = [
+        sentences[index:index + CHUNK_SIZE]
+        for index in range(0, len(sentences), CHUNK_SIZE)
+    ]
+    print(f"Pass 1: scanning {len(chunks)} chunks for glossary...")
+    glossary = build_glossary(chunks)
+    if glossary:
+        preview = list(glossary.items())[:5]
+        print(
+            f"Locked glossary ({len(glossary)} terms): {preview}"
+            f"{' ...' if len(glossary) > 5 else ''}"
+        )
+    else:
+        print("Pass 1: no recurring terms detected, proceeding without glossary.")
+
+    print(
+        f"Pass 2: translating {len(chunks)} chunks "
+        f"(size {CHUNK_SIZE}, concurrency {CONCURRENCY})..."
+    )
+    with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:
+        chunk_results = list(
+            pool.map(lambda chunk: translate_chunk(chunk, glossary), chunks)
+        )
+    return [sentence for result in chunk_results for sentence in result]
+
+
+def _translate_cached(
+    content,
+    subtitle_format,
+    handler_version,
+    translate_uncached,
+):
     if not CACHE_ENABLED:
-        result = _translate_srt_uncached(srt_content)
+        result = translate_uncached(content)
         result["cached"] = False
         return result
 
-    cache_key, source_sha256 = _translation_cache_identity(srt_content)
-    cached_srt = _get_cached_translation(cache_key)
-    if cached_srt is not None:
-        print(f"Translation cache hit: {cache_key[:12]}")
+    cache_key, source_sha256 = _translation_cache_identity(
+        content,
+        subtitle_format,
+        handler_version,
+    )
+    cached = _get_cached_translation(cache_key)
+    if cached is not None:
         return {
-            "srt": cached_srt,
+            "srt": cached,
             "token_usage": _empty_usage_summary(),
             "cached": True,
         }
 
-    # Double-check setelah mengambil per-key lock. Request identik yang datang
-    # bersamaan akan menunggu dan memakai hasil request pertama.
     with translation_key_lock(cache_key):
-        cached_srt = _get_cached_translation(cache_key)
-        if cached_srt is not None:
-            print(f"Translation cache hit after wait: {cache_key[:12]}")
+        cached = _get_cached_translation(cache_key)
+        if cached is not None:
             return {
-                "srt": cached_srt,
+                "srt": cached,
                 "token_usage": _empty_usage_summary(),
                 "cached": True,
             }
-
-        result = _translate_srt_uncached(srt_content)
+        result = translate_uncached(content)
         _set_cached_translation(cache_key, source_sha256, result["srt"])
         result["cached"] = False
         return result
 
 
-def _translate_srt_uncached(srt_content):
-    """Menerjemahkan konten SRT EN->ID via API cloud (batch + rekonstruksi).
+def translate_srt(srt_content):
+    from translate_srt import translate_srt_uncached
 
-    Return:
-        dict: {
-          'srt': str (SRT hasil terjemahan),
-          'token_usage': {scan, translate, total} per _build_usage_summary
-        }
-    """
-    # Reset token accumulator untuk run ini.
-    for phase in _TOKEN_USAGE:
-        for k in _TOKEN_USAGE[phase]:
-            _TOKEN_USAGE[phase][k] = 0
-
-    subtitles = list(srt.parse(srt_content))
-    print(f"Total subtitles before filter: {len(subtitles)}")
-
-    subtitles = remove_hearing_impaired(subtitles)
-    subtitles = remove_empty_subtitles(subtitles)
-    print(f"Total subtitles after filter: {len(subtitles)}")
-
-    if not subtitles:
-        _print_usage_summary()
-        return {"srt": "", "token_usage": _build_usage_summary()}
-
-    # 1) Gabungkan cue -> kalimat utuh
-    groups = group_into_sentences(subtitles)
-    sentences = [normalize_cue_text(" ".join(s.content for s in g)) for g in groups]
-    print(f"Reconstructed into {len(sentences)} sentences from "
-          f"{len(subtitles)} cues.")
-
-    # 2) Bagi jadi chunk
-    chunks = [sentences[i:i + CHUNK_SIZE]
-              for i in range(0, len(sentences), CHUNK_SIZE)]
-
-    # 2a) Pass 1: scan glossary (sequential, murah) untuk konsistensi istilah
-    print(f"Pass 1: scanning {len(chunks)} chunks for glossary...")
-    glossary = build_glossary(chunks)
-    if glossary:
-        # Print ringkas: full dict bisa panjang
-        preview = list(glossary.items())[:5]
-        print(f"Locked glossary ({len(glossary)} terms): {preview}"
-              f"{' ...' if len(glossary) > 5 else ''}")
-    else:
-        print("Pass 1: no recurring terms detected, proceeding without glossary.")
-
-    # 2b) Pass 2: terjemahkan paralel dengan glossary terkunci
-    print(f"Pass 2: translating {len(chunks)} chunks (size {CHUNK_SIZE}, "
-          f"concurrency {CONCURRENCY})...")
-    with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:
-        chunk_results = list(
-            pool.map(lambda c: translate_chunk(c, glossary), chunks)
-        )
-    translated_sentences = [s for res in chunk_results for s in res]
-
-    # 3) Pecah tiap kalimat terjemahan kembali ke cue aslinya
-    out_subs = []
-    for group, translated in zip(groups, translated_sentences):
-        pieces = distribute_translation(translated, group)
-        for sub, piece in zip(group, pieces):
-            sub.content = piece
-            out_subs.append(sub)
-
-    # 4) Re-index agar penomoran rapi
-    for new_index, sub in enumerate(out_subs, start=1):
-        sub.index = new_index
-
-    _print_usage_summary()
-    return {
-        "srt": srt.compose(out_subs),
-        "token_usage": _build_usage_summary(),
-    }
+    return _translate_cached(
+        srt_content,
+        "srt",
+        SRT_HANDLER_VERSION,
+        translate_srt_uncached,
+    )
 
 
 def handler(event):

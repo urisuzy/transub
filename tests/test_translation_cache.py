@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import translate
+import translate_srt
 from translation_cache import SQLiteTranslationCache, translation_key_lock
 
 
@@ -65,27 +66,26 @@ class SQLiteTranslationCacheTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")
             generated = {
-                "srt": "1\n00:00:00,000 --> 00:00:01,000\nHalo\n",
+                "srt": "translated",
                 "token_usage": {"total": {"calls": 1}},
             }
-
             with (
                 patch.object(translate, "translation_cache", cache),
                 patch.object(translate, "CACHE_ENABLED", True),
                 patch.object(
-                    translate,
-                    "_translate_srt_uncached",
+                    translate_srt,
+                    "translate_srt_uncached",
                     return_value=dict(generated),
-                ) as translate_uncached,
+                ) as uncached,
             ):
                 first = translate.translate_srt("source")
                 second = translate.translate_srt("source")
 
             self.assertFalse(first["cached"])
             self.assertTrue(second["cached"])
-            self.assertEqual(second["srt"], generated["srt"])
+            self.assertEqual(second["srt"], "translated")
             self.assertEqual(second["token_usage"]["total"]["calls"], 0)
-            translate_uncached.assert_called_once_with("source")
+            uncached.assert_called_once_with("source")
 
     def test_cache_version_changes_identity(self):
         with patch.object(translate, "CACHE_VERSION", "1"):
