@@ -644,6 +644,39 @@ def _translate_cached(
         return result
 
 
+def detect_subtitle_format(content):
+    sections = {
+        line.strip().lstrip("﻿").casefold()
+        for line in content.splitlines()
+        if line.strip().startswith(("[", "﻿["))
+    }
+    if "[script info]" in sections and "[events]" in sections:
+        return "ass"
+    return "srt"
+
+
+def translate_subtitle(content):
+    subtitle_format = detect_subtitle_format(content)
+    if subtitle_format == "ass":
+        from translate_ass import translate_ass_uncached
+
+        return _translate_cached(
+            content,
+            "ass",
+            ASS_HANDLER_VERSION,
+            translate_ass_uncached,
+        )
+
+    from translate_srt import translate_srt_uncached
+
+    return _translate_cached(
+        content,
+        "srt",
+        SRT_HANDLER_VERSION,
+        translate_srt_uncached,
+    )
+
+
 def translate_srt(srt_content):
     from translate_srt import translate_srt_uncached
 
@@ -656,30 +689,29 @@ def translate_srt(srt_content):
 
 
 def handler(event):
-    """Entry point RunPod. Input/output teks SRT yang dienkode base64."""
+    """RunPod entry point for base64-encoded SRT or ASS content."""
     input_data = event.get("input", {})
-    srt_text_base64 = input_data.get("srt_text_base64", "")
-
-    if not srt_text_base64:
-        return {"error": "Base64-encoded SRT text is required."}
+    subtitle_text_base64 = input_data.get("srt_text_base64", "")
+    if not subtitle_text_base64:
+        return {"error": "Base64-encoded subtitle text is required."}
 
     try:
-        srt_content = base64.b64decode(srt_text_base64).decode("utf-8")
+        subtitle_content = base64.b64decode(
+            subtitle_text_base64
+        ).decode("utf-8")
     except Exception as exc:
-        return {"error": f"Failed to decode base64 SRT: {exc}"}
+        return {"error": f"Failed to decode base64 subtitle: {exc}"}
 
     try:
-        result = translate_srt(srt_content)
+        result = translate_subtitle(subtitle_content)
     except Exception as exc:
         return {"error": f"Translation failed: {exc}"}
 
-    translated_srt = result["srt"]
-    translated_srt_base64 = base64.b64encode(
-        translated_srt.encode("utf-8")
+    translated_base64 = base64.b64encode(
+        result["srt"].encode("utf-8")
     ).decode("utf-8")
-
     return {
-        "translated_srt_base64": translated_srt_base64,
+        "translated_srt_base64": translated_base64,
         "token_usage": result["token_usage"],
         "cached": result.get("cached", False),
     }

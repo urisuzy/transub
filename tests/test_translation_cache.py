@@ -95,6 +95,20 @@ class SQLiteTranslationCacheTests(unittest.TestCase):
 
         self.assertNotEqual(first, second)
 
+    def test_handler_versions_change_completed_cache_identity(self):
+        srt_key, _ = translate._translation_cache_identity(
+            "source", "srt", "1"
+        )
+        ass_key, _ = translate._translation_cache_identity(
+            "source", "ass", "1"
+        )
+        ass_v2_key, _ = translate._translation_cache_identity(
+            "source", "ass", "2"
+        )
+
+        self.assertNotEqual(srt_key, ass_key)
+        self.assertNotEqual(ass_key, ass_v2_key)
+
     def test_scan_terms_reuses_validated_result(self):
         with tempfile.TemporaryDirectory() as directory:
             cache = SQLiteTranslationCache(Path(directory) / "cache.sqlite3")

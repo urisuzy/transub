@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
-from translate import translate_srt
+from translate import translate_subtitle
 
 app = FastAPI(title="transub", version="1.0")
 
@@ -27,27 +27,35 @@ def health():
 @app.post("/translate", response_model=TranslateResponse)
 async def translate(req: TranslateRequest):
     if not req.srt_text_base64:
-        raise HTTPException(status_code=400, detail="srt_text_base64 is required.")
-
+        raise HTTPException(
+            status_code=400,
+            detail="srt_text_base64 is required.",
+        )
     try:
-        srt_content = base64.b64decode(req.srt_text_base64).decode("utf-8")
+        subtitle_content = base64.b64decode(
+            req.srt_text_base64
+        ).decode("utf-8")
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Failed to decode base64 SRT: {exc}")
-
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to decode base64 subtitle: {exc}",
+        )
     try:
-        # translate_srt bersifat blocking (panggilan HTTP + threadpool internal),
-        # jalankan di threadpool agar event loop tidak terblok.
-        result = await run_in_threadpool(translate_srt, srt_content)
+        result = await run_in_threadpool(
+            translate_subtitle,
+            subtitle_content,
+        )
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Translation failed: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Translation failed: {exc}",
+        )
 
-    # result = {"srt": "...", "token_usage": {...}, "cached": bool}
-    translated_srt = result["srt"]
-    translated_srt_base64 = base64.b64encode(
-        translated_srt.encode("utf-8")
+    translated_base64 = base64.b64encode(
+        result["srt"].encode("utf-8")
     ).decode("utf-8")
     return TranslateResponse(
-        translated_srt_base64=translated_srt_base64,
+        translated_srt_base64=translated_base64,
         token_usage=result.get("token_usage"),
         cached=result.get("cached", False),
     )
