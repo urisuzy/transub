@@ -48,7 +48,7 @@ CACHE_PATH = os.environ.get(
 )
 # Naikkan versi ini (atau env-nya) untuk membatalkan seluruh cache setelah
 # perubahan pipeline yang tidak tercakup oleh fingerprint otomatis.
-CACHE_VERSION = os.environ.get("TRANSLATION_CACHE_VERSION", "1")
+CACHE_VERSION = os.environ.get("TRANSLATION_CACHE_VERSION", "2")
 
 SRT_HANDLER_VERSION = "1"
 ASS_HANDLER_VERSION = "1"
@@ -116,7 +116,18 @@ SYSTEM_PROMPT = (
     "4. PANJANG: Terjemahan boleh lebih panjang atau lebih pendek dari "
     "sumber. Yang penting natural, bukan jumlah kata.\n"
     '   - Contoh: "You bet!" -> "Jelas!" (pendek)\n'
-    '   - Contoh: "Sure." -> "Tentu aja." (lebih panjang)'
+    '   - Contoh: "Sure." -> "Tentu aja." (lebih panjang)\n\n'
+    "5. BAHASA OUTPUT — SANGAT PENTING:\n"
+    "   - Output WAJIB selalu bahasa Indonesia, TIDAK PERNAH bahasa lain.\n"
+    "   - DILARANG mengeluarkan aksara Mandarin/Jepang/Korea (汉字/かな/한글) "
+    "meskipun konteks adegan bernuansa Asia, nama tokoh Jepang, atau ada "
+    "kata serapan. Konteks Asia TIDAK mengubah bahasa target.\n"
+    "   - Kalimat sederhana wajib diterjemahkan: \"Yes\" -> \"Iya\", "
+    "\"Right.\" -> \"Benar.\", \"Got it.\" -> \"Paham.\", "
+    "\"Okay.\" -> \"Oke.\" — jangan biarkan apa adanya atau ganti bahasa.\n"
+    "   - Kalau baris sumber sudah berbahasa selain Inggris (mis. kata "
+    "asing), tetap terjemahkan maknanya ke Indonesia; jangan salin bahasa "
+    "asalnya begitu saja."
 )
 
 # Prompt khusus Pass 1 (scan glossary). Model cuma diminta output JSON object
@@ -134,6 +145,10 @@ SCAN_SYSTEM_PROMPT = (
     "- Hanya istilah yang muncul di teks input.\n"
     "- Jangan sertakan kata umum (the, and, of, dll) atau kata yang cuma "
     "muncul sekali tanpa konteks pengulangan.\n"
+    "- Padanan WAJIB bahasa Indonesia dalam aksara Latin. DILARANG "
+    "menggunakan aksara Mandarin/Jepang/Korea (汉字/かな/한글) sebagai "
+    "padanan, meskipun istilahnya nama tokoh Jepang atau tempat Asia. "
+    "Mis. \"Sasaki\" -> \"Sasaki\" (tetap Latin), bukan \"佐佐木\".\n"
     "- Kalau teks tidak punya istilah yang perlu di-glosarium-kan, output {}."
 )
 
@@ -144,6 +159,24 @@ replacements = [
 
 # Baris bernomor pada output model: "12. teks" / "12) teks" / "12: teks".
 _NUMBERED = re.compile(r"^\s*(\d+)\s*[.):\-]\s*(.*)$")
+
+# Aksara non-Latin (CJK + Arab + Cyrillic dll). Dipakai untuk membuang entri
+# glossary yang terkontaminasi bahasa asing - sumber utama halu 'chunk
+# tergelincir ke Mandarin' saat konteks adegan bernuansa Asia.
+# Range DIIZINKAN: ASCII 0x20-0x7E, Latin-1 0xA0-0xFF,
+# Latin Extended-A/B + IPA + Spacing Modifier Letters + Combining Diacritics
+# + Latin Extended Additional (0x1E00-0x1EFF) + General Punctuation
+# (0x2000-0x206F, em-dash/ellipsis/quotes). Semua di luar itu = non-Latin.
+_NON_LATIN_RE = re.compile(
+    r"[^\u0020-\u007e\u00a0-\u00ff\u0100-\u024f\u0250-\u02af\u02b0-\u02ff\u1e00-\u1eff\u2000-\u206f]"
+)
+
+
+def _has_non_latin(text):
+    """True jika teks mengandung aksara di luar Latin + extended Latin
+    (mis. CJK, Arab, Cyrillic). Dipakai untuk filter entri glossary Pass 1
+    yang terkontaminasi bahasa asing."""
+    return bool(_NON_LATIN_RE.search(text))
 
 
 def postprocess(text, glossary=None):
@@ -293,10 +326,18 @@ def scan_terms(chunk):
             return {}
 
         # Sanitasi: hanya str -> str, key non-empty, value non-empty.
+        # Filter entri non-Latin (CJK/Arab/dll) supaya glossary tidak jadi
+        # anchor yang menarik chunk Pass 2 ke bahasa asing — lihat bug
+        # halu Mandarin pada konteks nama Jepang.
         cleaned = {}
         for k, v in data.items():
-            if isinstance(k, str) and isinstance(v, str) and k.strip() and v.strip():
-                cleaned[k.strip()] = v.strip()
+            if not (isinstance(k, str) and isinstance(v, str) and k.strip() and v.strip()):
+                continue
+            key, val = k.strip(), v.strip()
+            if _has_non_latin(key) or _has_non_latin(val):
+                print(f"  scan: drop non-Latin glossary entry {key!r} -> {val!r}")
+                continue
+            cleaned[key] = val
         _set_cached_step(cache_key, "scan", cleaned)
         return cleaned
 
@@ -313,6 +354,11 @@ def build_glossary(chunks):
     for idx, chunk in enumerate(chunks, start=1):
         terms = scan_terms(chunk)
         for en, id_ in terms.items():
+            # Defense-in-depth: scan_terms sudah memfilter entri non-Latin,
+            # tapi cache lama mungkin masih punya entri CJK. Lewati entri
+            # yang terkontaminasi bahasa asing.
+            if _has_non_latin(en) or _has_non_latin(id_):
+                continue
             # Dedupe case-insensitive: kalau sudah ada entri dengan lower(en)
             # yang sama, JANGAN timpa. First-seen wins.
             if en.lower() not in {k.lower() for k in merged}:
