@@ -88,8 +88,10 @@ def _record_usage(phase, resp):
 
 
 SYSTEM_PROMPT = (
-    "Kamu penerjemah subtitle film profesional dari bahasa Inggris ke bahasa "
-    "Indonesia. Terjemahkan dengan gaya percakapan yang natural dan luwes, "
+    "Kamu penerjemah subtitle film profesional ke bahasa Indonesia. Bahasa "
+    "sumber bisa apa saja (Inggris, Melayu, Spanyol, Portugis, Prancis, "
+    "Italia, Rumania, Filipina, Jepang, Korea, Mandarin, Vietnam, Arab, dll.) "
+    "-- kenali sendiri dari teksnya. Terjemahkan dengan gaya percakapan yang natural dan luwes, "
     "bukan terjemahan kaku kata-per-kata. Sesuaikan nada bicara dengan "
     "konteks adegan. Pertahankan nama orang, tempat, dan istilah teknis.\n\n"
     "PEDOMAN TERJEMAHAN:\n\n"
@@ -125,9 +127,15 @@ SYSTEM_PROMPT = (
     "   - Kalimat sederhana wajib diterjemahkan: \"Yes\" -> \"Iya\", "
     "\"Right.\" -> \"Benar.\", \"Got it.\" -> \"Paham.\", "
     "\"Okay.\" -> \"Oke.\" — jangan biarkan apa adanya atau ganti bahasa.\n"
-    "   - Kalau baris sumber sudah berbahasa selain Inggris (mis. kata "
-    "asing), tetap terjemahkan maknanya ke Indonesia; jangan salin bahasa "
-    "asalnya begitu saja."
+    "   - Kalau baris sumber campur beberapa bahasa, tetap terjemahkan "
+    "maknanya ke Indonesia; jangan salin bahasa asalnya begitu saja.\n\n"
+    "6. BAHASA SUMBER NON-INGGRIS:\n"
+    "   - Jepang/Korea/Mandarin sering menghilangkan subjek -- tambahkan "
+    "subjek (aku/kamu/dia) bila perlu supaya kalimat Indonesia jelas.\n"
+    "   - Pertahankan honorifik nama Jepang/Korea (-san, -kun, -senpai, "
+    "oppa, unnie) dalam aksara Latin.\n"
+    "   - Melayu: adaptasi ke kosakata Indonesia (mis. \"kereta\" -> "
+    "\"mobil\", \"boleh\" -> \"bisa\" bila maknanya mampu)."
 )
 
 # Prompt khusus Pass 1 (scan glossary). Model cuma diminta output JSON object
@@ -140,11 +148,12 @@ SCAN_SYSTEM_PROMPT = (
     "Untuk setiap istilah, berikan padanan bahasa Indonesia yang natural "
     "dan luwes (gaya subtitle film, bukan kaku).\n\n"
     "Output WAJIB JSON object dengan format:\n"
-    '{"sumber_inggris": "padanan_indonesia", ...}\n\n'
+    '{"istilah_sumber": "padanan_indonesia", ...}\n\n'
     "Aturan ketat:\n"
     "- Hanya istilah yang muncul di teks input.\n"
     "- Jangan sertakan kata umum (the, and, of, dll) atau kata yang cuma "
     "muncul sekali tanpa konteks pengulangan.\n"
+    "- Istilah sumber ditulis persis seperti di teks (boleh aksara asli).\n"
     "- Padanan WAJIB bahasa Indonesia dalam aksara Latin. DILARANG "
     "menggunakan aksara Mandarin/Jepang/Korea (汉字/かな/한글) sebagai "
     "padanan, meskipun istilahnya nama tokoh Jepang atau tempat Asia. "
@@ -249,7 +258,7 @@ def _chat_with_tokens(user_content, system_prompt, max_tokens):
 def translate_single(sentence, glossary=None):
     """Fallback: terjemahkan satu kalimat saja (dipakai jika batch gagal align)."""
     user = (
-        "Terjemahkan kalimat subtitle Inggris berikut ke bahasa Indonesia. "
+        "Terjemahkan kalimat subtitle berikut ke bahasa Indonesia. "
         "Keluarkan HANYA terjemahannya, tanpa label atau penjelasan:\n\n"
         + sentence
     )
@@ -285,7 +294,7 @@ def scan_terms(chunk):
     numbered = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(chunk))
     user = (
         f"Identifikasi istilah yang harus konsisten dari {len(chunk)} baris "
-        "subtitle Inggris berikut:\n\n" + numbered
+        "subtitle berikut:\n\n" + numbered
     )
     cache_key = _step_cache_identity("scan", {"request": user})
     cached = _get_cached_scan(cache_key)
@@ -326,15 +335,16 @@ def scan_terms(chunk):
             return {}
 
         # Sanitasi: hanya str -> str, key non-empty, value non-empty.
-        # Filter entri non-Latin (CJK/Arab/dll) supaya glossary tidak jadi
+        # Filter padanan non-Latin (CJK/Arab/dll) supaya glossary tidak jadi
         # anchor yang menarik chunk Pass 2 ke bahasa asing — lihat bug
-        # halu Mandarin pada konteks nama Jepang.
+        # halu Mandarin pada konteks nama Jepang. Istilah sumber boleh
+        # non-Latin (subtitle Jepang/Korea/Arab).
         cleaned = {}
         for k, v in data.items():
             if not (isinstance(k, str) and isinstance(v, str) and k.strip() and v.strip()):
                 continue
             key, val = k.strip(), v.strip()
-            if _has_non_latin(key) or _has_non_latin(val):
+            if _has_non_latin(val):
                 print(f"  scan: drop non-Latin glossary entry {key!r} -> {val!r}")
                 continue
             cleaned[key] = val
@@ -357,7 +367,7 @@ def build_glossary(chunks):
             # Defense-in-depth: scan_terms sudah memfilter entri non-Latin,
             # tapi cache lama mungkin masih punya entri CJK. Lewati entri
             # yang terkontaminasi bahasa asing.
-            if _has_non_latin(en) or _has_non_latin(id_):
+            if _has_non_latin(id_):
                 continue
             # Dedupe case-insensitive: kalau sudah ada entri dengan lower(en)
             # yang sama, JANGAN timpa. First-seen wins.
@@ -395,7 +405,7 @@ def translate_chunk(chunk, glossary=None):
             + "\n\n"
         )
     user = (
-        f"Terjemahkan {n} baris subtitle Inggris berikut ke bahasa Indonesia.\n"
+        f"Terjemahkan {n} baris subtitle berikut ke bahasa Indonesia.\n"
         "Aturan ketat:\n"
         f"- Keluarkan TEPAT {n} baris.\n"
         "- Pertahankan nomor urut di depan tiap baris (format: \"N. teks\").\n"

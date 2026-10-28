@@ -9,7 +9,11 @@ from translate import (
     translate_sentences,
 )
 
-_SENTENCE_END = re.compile(r"""[.!?…]['"”’\)\]]*\s*$""")
+_SENTENCE_END = re.compile(r"""[.!?…。！？؟]['"”’\)\]」』）]*\s*$""")
+
+# Subtitle Jepang/Korea sering tanpa tanda akhir kalimat sama sekali; tanpa
+# batas ini seluruh file bisa tergabung jadi satu "kalimat".
+MAX_GROUP_CUES = 4
 
 
 def remove_empty_subtitles(subtitles):
@@ -20,6 +24,7 @@ def remove_hearing_impaired(subtitles):
     for sub in subtitles:
         sub.content = re.sub(r"\([^)]*\)", "", sub.content)
         sub.content = re.sub(r"\[[^\]]*\]", "", sub.content)
+        sub.content = re.sub(r"（[^）]*）", "", sub.content)
     return subtitles
 
 
@@ -32,7 +37,10 @@ def group_into_sentences(subtitles):
     current = []
     for sub in subtitles:
         current.append(sub)
-        if _SENTENCE_END.search(normalize_cue_text(sub.content)):
+        if (
+            _SENTENCE_END.search(normalize_cue_text(sub.content))
+            or len(current) >= MAX_GROUP_CUES
+        ):
             groups.append(current)
             current = []
     if current:

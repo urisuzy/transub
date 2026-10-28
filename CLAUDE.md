@@ -1,6 +1,7 @@
 # transub
 
-Cloud-based subtitle (SRT) translator: English → Indonesian. Exposes a single
+Cloud-based subtitle (SRT/ASS) translator: any source language → Indonesian
+(the model detects the source language; prompts are language-agnostic). Exposes a single
 HTTP endpoint that accepts a base64-encoded SRT and returns a base64-encoded
 translated SRT.
 
@@ -37,8 +38,10 @@ not a local model. The repo previously hosted a vLLM/RP handler (branches
 2. **Strip** hearing-impaired markup (`(...)`, `[...]`) and drop empty cues.
 3. **Group cues → sentences** (`group_into_sentences`): subtitle files
    often split one sentence across multiple cues. We accumulate cues
-   until we hit a sentence-ending punctuation (`.!?…` plus optional
-   closing quotes/brackets), so the model sees a full sentence.
+   until we hit a sentence-ending punctuation (`.!?…。！？؟` plus optional
+   closing quotes/brackets), so the model sees a full sentence. A group is
+   capped at `MAX_GROUP_CUES` (4) cues — Japanese/Korean subs often have no
+   sentence punctuation at all.
 4. **Batch into chunks** of `CHUNK_SIZE` sentences (default 100).
 5. **Pass 1 — Scan glossary** (sequential, cheap). For each chunk we
    send a small request asking the model to return JSON of recurring
