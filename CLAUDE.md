@@ -34,6 +34,10 @@ not a local model. The repo previously hosted a vLLM/RP handler (branches
 
 ## Translation pipeline (`translate.translate_srt`)
 
+0. **Decode** (`decode_subtitle`): UTF-8 as-is, UTF-16 with BOM, else
+   `charset-normalizer` (ties between equally clean single-byte encodings
+   resolved by `_PREFERRED_ENCODINGS`, cp1252 first). Non-English subs are
+   often cp1250/cp1256/Shift-JIS/CP949.
 1. **Parse** SRT with the `srt` library.
 2. **Strip** hearing-impaired markup (`(...)`, `[...]`) and drop empty cues.
 3. **Group cues → sentences** (`group_into_sentences`): subtitle files

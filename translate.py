@@ -1,10 +1,12 @@
 import base64
+import codecs
 import hashlib
 import json
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor
 
+import charset_normalizer
 from openai import OpenAI
 from translation_cache import SQLiteTranslationCache, translation_key_lock
 
@@ -744,6 +746,35 @@ def translate_srt(srt_content):
     )
 
 
+# Urutan pilihan kalau beberapa encoding sama-sama "bersih" menurut
+# charset_normalizer (mis. cp1250 vs cp1252 untuk teks Italia).
+_PREFERRED_ENCODINGS = [
+    "cp1252", "cp1250", "cp1256", "cp1251", "cp1253", "cp1254", "cp1255",
+    "cp1257", "cp1258", "cp874", "shift_jis", "cp932", "euc_kr", "cp949",
+    "gb18030", "big5",
+]
+
+
+def decode_subtitle(raw):
+    """Bytes subtitle -> teks. UTF-8 apa adanya (BOM UTF-8 tetap ikut, sama
+    seperti sebelumnya), UTF-16 ber-BOM, lalu deteksi encoding lama (cp1252,
+    cp1256, dll.) - subtitle non-Inggris sering bukan UTF-8."""
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        pass
+    if raw.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+        return raw.decode("utf-16")
+    matches = list(charset_normalizer.from_bytes(raw))
+    if not matches:
+        raise ValueError("unknown subtitle encoding")
+    least_chaos = min(match.chaos for match in matches)
+    tied = [match for match in matches if match.chaos == least_chaos]
+    rank = {name: index for index, name in enumerate(_PREFERRED_ENCODINGS)}
+    best = min(tied, key=lambda match: rank.get(match.encoding, len(rank)))
+    return str(best)
+
+
 def handler(event):
     """RunPod entry point for base64-encoded SRT or ASS content."""
     input_data = event.get("input", {})
@@ -752,9 +783,9 @@ def handler(event):
         return {"error": "Base64-encoded subtitle text is required."}
 
     try:
-        subtitle_content = base64.b64decode(
-            subtitle_text_base64
-        ).decode("utf-8")
+        subtitle_content = decode_subtitle(
+            base64.b64decode(subtitle_text_base64)
+        )
     except Exception as exc:
         return {"error": f"Failed to decode base64 subtitle: {exc}"}
 

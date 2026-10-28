@@ -2,3 +2,4 @@ openai
 srt
 fastapi
 uvicorn[standard]
+charset-normalizer

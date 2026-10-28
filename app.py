@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
-from translate import translate_subtitle
+from translate import decode_subtitle, translate_subtitle
 
 app = FastAPI(title="transub", version="1.0")
 
@@ -32,9 +32,9 @@ async def translate(req: TranslateRequest):
             detail="srt_text_base64 is required.",
         )
     try:
-        subtitle_content = base64.b64decode(
-            req.srt_text_base64
-        ).decode("utf-8")
+        subtitle_content = decode_subtitle(
+            base64.b64decode(req.srt_text_base64)
+        )
     except Exception as exc:
         raise HTTPException(
             status_code=400,
