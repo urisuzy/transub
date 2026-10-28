@@ -9,7 +9,7 @@ from translate import (
     translate_sentences,
 )
 
-_SENTENCE_END = re.compile(r"""[.!?…。！？؟]['"”’\)\]」』）]*\s*$""")
+_SENTENCE_END = re.compile(r"""[.!?…。！？؟♪]['"”’\)\]」』）]*\s*$""")
 
 # Subtitle Jepang/Korea sering tanpa tanda akhir kalimat sama sekali; tanpa
 # batas ini seluruh file bisa tergabung jadi satu "kalimat".
@@ -25,6 +25,26 @@ def remove_hearing_impaired(subtitles):
         sub.content = re.sub(r"\([^)]*\)", "", sub.content)
         sub.content = re.sub(r"\[[^\]]*\]", "", sub.content)
         sub.content = re.sub(r"（[^）]*）", "", sub.content)
+    return subtitles
+
+
+_ARABIC = re.compile(r"[\u0600-\u06ff]")
+_RTL_LINE = re.compile(r"^([.!?…,،:;]*)(.*?)(\s*-)?$")
+
+
+def fix_rtl_punctuation(subtitles):
+    """SRT Arab sering menyimpan tanda baca Latin di AWAL baris dan dash
+    dialog di AKHIR (urutan tampilan RTL, bukan urutan logis). Tanpa ini
+    akhir kalimat tidak terdeteksi dan cue tergabung lalu terpotong salah."""
+    for sub in subtitles:
+        lines = []
+        for line in sub.content.split("\n"):
+            stripped = line.strip()
+            if _ARABIC.search(stripped):
+                lead, body, dash = _RTL_LINE.match(stripped).groups()
+                stripped = ("- " if dash else "") + body.strip() + lead
+            lines.append(stripped)
+        sub.content = "\n".join(lines)
     return subtitles
 
 
@@ -100,8 +120,11 @@ def _find_cut(source_texts, cue_index, target_text, previous):
         target + window,
     )
 
-    anchors = []
-    for match in re.finditer(r"[.,!?;:…—\-]", target_text):
+    # Tanda baca = titik potong sesudahnya. "-" cuma dash dialog (" - "),
+    # dipotong SEBELUM dash-nya; "-" di dalam kata ("apa-apa", "Su-an")
+    # bukan titik potong.
+    anchors = [match.start() + 1 for match in re.finditer(r"\s-\s", target_text)]
+    for match in re.finditer(r"[.,!?;:…—]", target_text):
         position = match.end()
         while position < target_length and target_text[position] == " ":
             position += 1
@@ -127,6 +150,7 @@ def translate_srt_uncached(srt_content):
     subtitles = list(srt.parse(srt_content))
     print(f"Total subtitles before filter: {len(subtitles)}")
 
+    subtitles = fix_rtl_punctuation(subtitles)
     subtitles = remove_hearing_impaired(subtitles)
     subtitles = remove_empty_subtitles(subtitles)
     print(f"Total subtitles after filter: {len(subtitles)}")

@@ -71,6 +71,34 @@ class SentenceGroupingTests(unittest.TestCase):
         self.assertTrue(all(len(g) <= srt_handler.MAX_GROUP_CUES for g in groups))
         self.assertEqual(sum(len(g) for g in groups), 10)
 
+    def test_song_lyric_cues_are_their_own_groups(self):
+        groups = srt_handler.group_into_sentences(_cues("♪ 검은 구름 ♪", "♪ 하늘을 가리고 ♪"))
+        self.assertEqual([len(g) for g in groups], [1, 1])
+
+    def test_rtl_punctuation_stored_at_line_start_is_moved_to_the_end(self):
+        subs = srt_handler.fix_rtl_punctuation(
+            _cues(".كلا", "!أهلاً بك، يا مين هيوك", ".بالطبع -\nما الذي تفعله هنا؟ -", "هل أنت بخير؟", "Hi.")
+        )
+        self.assertEqual(
+            [sub.content for sub in subs],
+            ["كلا.", "أهلاً بك، يا مين هيوك!", "- بالطبع.\n- ما الذي تفعله هنا؟", "هل أنت بخير؟", "Hi."],
+        )
+
+    def test_distribution_never_cuts_inside_a_hyphenated_word(self):
+        pieces = srt_handler.distribute_translation(
+            "Eh, nggak apa-apa, nggak apa-apa, tenang aja.",
+            _cues("어, 괜찮아", "괜찮아, 괜찮아"),
+        )
+        self.assertEqual(len(pieces), 2)
+        self.assertFalse(any(p.endswith("apa-") or p.startswith("apa,") for p in pieces), pieces)
+
+    def test_distribution_cuts_before_a_dialogue_dash(self):
+        pieces = srt_handler.distribute_translation(
+            "Lanjutkan - Tepuk tangan penyemangat.",
+            _cues("계속해", "응원의 박수"),
+        )
+        self.assertEqual(pieces, ["Lanjutkan", "- Tepuk tangan penyemangat."])
+
     def test_fullwidth_hearing_impaired_markup_is_removed(self):
         subs = srt_handler.remove_hearing_impaired(_cues("（笑い）行こう"))
         self.assertEqual(subs[0].content, "行こう")
